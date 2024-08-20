@@ -64,7 +64,7 @@ for fleet_filename in ["___flotten_random_test2"]:
     fleet_df["fleet_id"] = range(0, len(fleet_df))
     fleet_df = fleet_df.set_index("fleet_id")
     print(fleet_df)
-    #fleet_df = fleet_df[fleet_df.index.isin(range(0, 1))]                                                                   #0, 3 = 3 Einträge (0,1,2)
+    fleet_df = fleet_df[fleet_df.index.isin(range(0, 10))]                                                                   #0, 3 = 3 Einträge (0,1,2)
     nb_fleets = len(fleet_df)
     print("Anzahl der Time Steps:\t",nb_time_steps,"Dies entspricht:",nb_time_steps*0.25,"Stunde" ,"\nAnzahl der Zellen:\t\t", nb_cells,"\nAnzahl der Flotten:\t\t" ,nb_fleets)
     #print(fleet_df.loc[2]) #Eine Zeile auslesen
@@ -240,7 +240,7 @@ for fleet_filename in ["___flotten_random_test2"]:
     # Speichern des Diagramms
     output_path = os.path.join(output_dir, f'unused_capacity_over_time_{time_of_optimization}.png')
     plt.savefig(output_path)
-    plt.show()
+    #plt.show()
 
 
     """Ausgabe Datein erstellen"""

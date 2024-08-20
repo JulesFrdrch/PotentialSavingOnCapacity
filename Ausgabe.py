@@ -127,7 +127,7 @@ def write_output_file_Energy_charged(model, time_of_optimization, filename):
     plt.savefig(output_path)
 
     # Anzeigen des Diagramms
-    plt.show()
+    #plt.show()
     # Visualisierung der geladenen Energie für ausgewählte Zellen
     selected_cells = [13,19,10,9]  # Beispielhafte Liste der ausgewählten Zellen, anpassen nach Bedarf
 
@@ -155,7 +155,7 @@ def write_output_file_Energy_charged(model, time_of_optimization, filename):
     plt.savefig(output_path_selected)
 
     # Anzeigen des Diagramms für ausgewählte Zellen
-    plt.show()
+    #plt.show()
 
 def write_output_file_Charging(model, time_of_optimization, filename):
     results = get_variables_from_model2(model)
