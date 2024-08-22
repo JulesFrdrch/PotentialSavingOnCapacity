@@ -218,9 +218,16 @@ def add_decision_variables_and_create_key_sets(
     model.E_charge2 = Var(model.charging_cells_key_set, within=NonNegativeReals)
     model.E_charge3 = Var(model.charging_cells_key_set, within=NonNegativeReals)
 
+
     """Neue Variablen / Julius"""
     # Neue Variable für nicht genutzte Kapazität
     model.unused_capacity = Var(model.t_cs, within=NonNegativeReals)
+
+    # Neue Variable Cap_unused hinzufügen
+    model.Cap_unused = Var(model.nb_cell, domain=NonNegativeReals)
+    # Setze die Cap_unused Variable initial auf 0 oder einen anderen Startwert
+    for c in model.nb_cell:
+        model.Cap_unused[c] = 0.0
 
 def create_set_init(model):
     """
@@ -751,6 +758,7 @@ def constr_vehicle_states(model: ConcreteModel):
     """Unused_capacity"""
     model.unused_capacity_constraint = Constraint(model.t_cs,
                                                            rule=unused_capacity_constraint_rule)
+    model.Cap_unused_constraint = Constraint(model.nb_cell, rule=cap_unused_rule)
 
 """Charging"""
 def restraint_charging_capacity(model: ConcreteModel):
@@ -857,5 +865,14 @@ def unused_capacity_constraint_rule(model, t, c):
         model.E_charge1[t, c, f] + model.E_charge2[t, c, f] + model.E_charge3[t, c, f] for f in model.nb_fleet if
         (t, c, f) in model.charging_cells_key_set)
     return model.unused_capacity[t, c] == model.cell_charging_cap[c] - total_charge
+
+def cap_unused_rule(model, c):
+    return model.Cap_unused[c] == model.cell_charging_cap[c] - quicksum(
+        (model.E_charge1[t, c, f] + model.E_charge2[t, c, f] + model.E_charge3[t, c, f])
+        for t in model.nb_timestep
+        for f in model.nb_fleet
+        if (t, c, f) in model.charging_cells_key_set
+    )
+
 
 
