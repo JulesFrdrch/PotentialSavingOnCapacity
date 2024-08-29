@@ -1,10 +1,8 @@
-import numpy as np
 import os
 import pandas as pd
 from pyomo.core import ConcreteModel
 from scipy.stats import norm
 from pyomo.environ import *
-import numpy as np
 from utils import *
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -22,8 +20,9 @@ import Ausgabe as ta
 from Funktionen import *
 from FehlendeFunktionen import *
 from Ausgabe import *
+from plots import *
 #from _optimization_utils import write_output_files
-
+from plots import *
 #from _optimization_utils import *
 
 """Bibliotheken einfügen"""
@@ -71,91 +70,6 @@ def write_output_file_Fleet_infos(model, time_of_optimization, filename):
         fleet_specifics = fleet_specifics.append(d, ignore_index=True)
 
     fleet_specifics.to_csv("results/" + "Fleet_Infos" + "(" + time_of_optimization + ")" ".csv")
-
-def write_output_file_Energy_charged(model, time_of_optimization, filename):
-    results = get_variables_from_model2(model)
-
-    """Nur charged"""
-    total_charged = pd.DataFrame()
-    inds_of_all_cells = [ind for ind in model.nb_cell if model.cell_charging_cap[ind] >= 0]
-    for ij in range(0, len(inds_of_all_cells)):
-        d = {}
-        c = inds_of_all_cells[ij]
-        d["Cell ID"] = c
-        d["Capacity"] = model.cell_charging_cap[c]
-        d["Max_Capacity"] = 0
-
-        for t in model.nb_timestep:
-            d["Energy Charged at t=" + str(t)] = np.sum(results["E_charge1"][t, c, :]) + np.sum(
-                results["E_charge2"][t, c, :]) + np.sum(results["E_charge3"][t, c, :])
-
-        total_charged = total_charged.append(d, ignore_index=True)
-
-    for idx in range(91):
-        row_list = total_charged.loc[idx, :].values.flatten().tolist()
-        row_list = row_list[3:]
-        total_charged.loc[idx,'Max_Capacity']=max(row_list)
-
-    stefan=total_charged.loc[:, 'Max_Capacity']
-    total_charged.to_excel("results/" + "Energy_charged" + "(" + time_of_optimization + ")" ".xlsx", index=False)
-    # Erstellen des Diagramms für die Summe der "Energy Charged at t"
-    timesteps = model.nb_timestep
-    total_energy_charged = []
-
-    for t in timesteps:
-        total_energy_t = 0
-        for c in inds_of_all_cells:
-            total_energy_t += np.sum(results["E_charge1"][t, c, :]) + np.sum(results["E_charge2"][t, c, :]) + np.sum(
-                results["E_charge3"][t, c, :])
-        total_energy_charged.append(total_energy_t)
-
-    # Erstellen und Speichern des Diagramms
-    plt.figure(figsize=(14, 8))
-    plt.plot(timesteps, total_energy_charged, label='Total Energy Charged', marker='o')
-    plt.xlabel('Timestep')
-    plt.ylabel('Total Energy Charged')
-    plt.title('Total Energy Charged Over Time (all cells)')
-    plt.legend(loc='upper right')
-    plt.grid(True)
-
-    # Verzeichnis für die Speicherung erstellen, falls es nicht existiert
-    output_dir = os.path.join('results', 'Pictures')
-    os.makedirs(output_dir, exist_ok=True)
-
-    # Speichern des Diagramms
-    output_path = os.path.join(output_dir, f'total_energy_charged_over_time_{time_of_optimization}.png')
-    plt.savefig(output_path)
-
-    # Anzeigen des Diagramms
-    #plt.show()
-    # Visualisierung der geladenen Energie für ausgewählte Zellen
-    selected_cells = [13,19,10,9]  # Beispielhafte Liste der ausgewählten Zellen, anpassen nach Bedarf
-
-    plt.figure(figsize=(14, 8))
-    for c in selected_cells:
-        energy_charged = []
-        for t in timesteps:
-            if c in inds_of_all_cells:
-                energy_t = np.sum(results["E_charge1"][t, c, :]) + np.sum(results["E_charge2"][t, c, :]) + np.sum(
-                    results["E_charge3"][t, c, :])
-                energy_charged.append(energy_t)
-            else:
-                energy_charged.append(0)
-
-        plt.plot(timesteps, energy_charged, label=f'Cell {c}', marker='o')
-
-    plt.xlabel('Timestep')
-    plt.ylabel('Energy Charged')
-    plt.title('Energy Charged Over Time for Selected Cells')
-    plt.legend(loc='upper right')
-    plt.grid(True)
-
-    # Speichern des Diagramms für ausgewählte Zellen
-    output_path_selected = os.path.join(output_dir, f'energy_charged_selected_cells_{time_of_optimization}.png')
-    plt.savefig(output_path_selected)
-
-    # Anzeigen des Diagramms für ausgewählte Zellen
-    #plt.show()
 
 def write_output_file_Charging(model, time_of_optimization, filename):
     results = get_variables_from_model2(model)
@@ -631,3 +545,74 @@ def write_output_file_Energy_charged_each(model, time_of_optimization, filename)
         total_charged_each = total_charged_each.append(d, ignore_index=True)
 
     total_charged_each.to_excel("results/" + "Energy_charged_each" + "(" + time_of_optimization + ")" ".xlsx", index=False)
+
+def print_cell_info(cells_df):
+    """
+    Funktion, die eine Auflistung aller Zellen zusammen mit den Informationen: length, has_cs, und capacity ausgibt.
+
+    :param cells_df: DataFrame, der die Zelleninformationen enthält
+    """
+    print("Liste der eingelesenen Zellen und ihre Eigenschaften:")
+    print("="*50)
+    for index, row in cells_df.iterrows():
+        cell_id = row['cell_id'] if 'cell_id' in row else index  # Annahme: Es gibt eine 'cell_id'-Spalte, andernfalls Index verwenden
+        length = row.get('length', 'N/A')
+        has_cs = row.get('has_cs', 'N/A')
+        capacity = row.get('capacity', 'N/A')
+        print(f"Zelle ID: {cell_id}, Länge: {length}, Hat Ladestation: {has_cs}, Kapazität: {capacity}")
+    print("="*50)
+
+
+
+def write_output_file_Energy_charged(model, time_of_optimization, filename):
+    results = get_variables_from_model2(model)
+
+    """Nur charged"""
+    total_charged = pd.DataFrame()
+    inds_of_all_cells = [ind for ind in model.nb_cell if model.cell_charging_cap[ind] >= 0]
+    for ij in range(0, len(inds_of_all_cells)):
+        d = {}
+        c = inds_of_all_cells[ij]
+        d["Cell ID"] = c
+        d["Capacity"] = model.cell_charging_cap[c]
+        d["Max_Capacity"] = 0
+
+        for t in model.nb_timestep:
+            d["Energy Charged at t=" + str(t)] = (
+                np.sum(results["E_charge1"][t, c, :])
+                + np.sum(results["E_charge2"][t, c, :])
+                + np.sum(results["E_charge3"][t, c, :])
+            )
+
+        total_charged = total_charged.append(d, ignore_index=True)
+
+    for idx in range(91):
+        row_list = total_charged.loc[idx, :].values.flatten().tolist()
+        row_list = row_list[3:]
+        total_charged.loc[idx, 'Max_Capacity'] = max(row_list)
+
+    stefan = total_charged.loc[:, 'Max_Capacity']
+    total_charged.to_excel(f"results/Energy_charged({time_of_optimization}).xlsx", index=False)
+
+    # Erstellen des Diagramms für die Summe der "Energy Charged at t"
+    timesteps = model.nb_timestep
+    total_energy_charged = []
+
+    for t in timesteps:
+        total_energy_t = 0
+        for c in inds_of_all_cells:
+            total_energy_t += (
+                np.sum(results["E_charge1"][t, c, :])
+                + np.sum(results["E_charge2"][t, c, :])
+                + np.sum(results["E_charge3"][t, c, :])
+            )
+        total_energy_charged.append(total_energy_t)
+
+    # Aufruf der Funktion zur Erstellung des Plots für die gesamte geladene Energie
+    plot_total_energy_charged(timesteps, total_energy_charged, time_of_optimization)
+
+    # Visualisierung der geladenen Energie für ausgewählte Zellen
+    selected_cells = [13, 19, 10, 9]  # Beispielhafte Liste der ausgewählten Zellen, anpassen nach Bedarf
+
+    # Aufruf der Funktion zur Erstellung des Plots für ausgewählte Zellen
+    plot_energy_charged_for_selected_cells(timesteps, results, inds_of_all_cells, selected_cells, time_of_optimization)

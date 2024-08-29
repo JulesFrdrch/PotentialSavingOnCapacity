@@ -30,6 +30,6 @@ def minimize_waiting_and_charging(model: ConcreteModel):
                     for el in model.charging_cells_key_set
             )
         ),
-        sense=minimize,
+        #sense=minimize,
 
     )

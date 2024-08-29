@@ -1,11 +1,12 @@
 """Python Dateien einfügen"""
-import Ausgabe as ta
 from Funktionen import *
 from FehlendeFunktionen import *
 from Ausgabe import *
 from Zielfunktion import *
+from plots import *
+from input_capacity_reduction import *
+from uncontrolled_cars import *
 #from _optimization_utils import write_output_files
-
 #from _optimization_utils import *
 
 """Bibliotheken einfügen"""
@@ -64,7 +65,7 @@ for fleet_filename in ["___flotten_random_test2"]:
     fleet_df["fleet_id"] = range(0, len(fleet_df))
     fleet_df = fleet_df.set_index("fleet_id")
     print(fleet_df)
-    fleet_df = fleet_df[fleet_df.index.isin(range(0, 100))]                                                                   #0, 3 = 3 Einträge (0,1,2)
+    fleet_df = fleet_df[fleet_df.index.isin(range(0, 50))]                                                                   #0, 3 = 3 Einträge (0,1,2)
     nb_fleets = len(fleet_df)
     print("Anzahl der Time Steps:\t",nb_time_steps,"Dies entspricht:",nb_time_steps*0.25,"Stunde" ,"\nAnzahl der Zellen:\t\t", nb_cells,"\nAnzahl der Flotten:\t\t" ,nb_fleets)
     #print(fleet_df.loc[2]) #Eine Zeile auslesen
@@ -107,9 +108,10 @@ for fleet_filename in ["___flotten_random_test2"]:
     )
     print("... took ", str(time.time() - t0), " sec")
 
+    """Change of the input capacities"""
     # Reduktion aller Zellen-Kapazitäten
-    #reduction_factor = 0.5  # Reduzieren der Kapazitäten um 50%, 0.8 wäre 20%
-    #reduce_cell_capacities(charging_model, reduction_factor)
+    reduction_factor = 0.5  # Reduzieren der Kapazitäten um 50%, 0.8 wäre 20%
+    reduce_cell_capacities(charging_model, reduction_factor)
 
     # Reduktion ausgewählter Zellen-Kapazitäten
     #selected_cells = [2, 3, 4, 5]  # IDs der Zellen, deren Kapazitäten reduziert werden sollen
@@ -153,17 +155,21 @@ for fleet_filename in ["___flotten_random_test2"]:
     print("... took ", str(time.time() - t6), " sec")
 
 
+    print("\nConstraining random fleet cars ...")
+    t7 = time.time()
+    #define_fleet_37_routing_constraints(charging_model)                                            #uncontrolled_cars
+    print("... took ", str(time.time() - t7), " sec")
 
 
 
     print("\nAdding objective function ...")
-    t7 = time.time()
+    t8 = time.time()
     minimize_waiting_and_charging(charging_model)                                             #Zielfunktion
 
     cost_per_kw = 0.1  # Beispielwert für die Kosten pro kW, anpassbar
     #minimize_waiting_and_maximize_savings(charging_model, cost_per_kw)
 
-    print("... took ", str(time.time() - t7), " sec")
+    print("... took ", str(time.time() - t8), " sec")
     # _file = open("Math-Equations.txt", "w", encoding="utf-8")
     # charging_model.pprint(ostream=_file, verbose=False, prefix="")
     # _file.close()
@@ -195,11 +201,14 @@ for fleet_filename in ["___flotten_random_test2"]:
 
     time_of_optimization = time.strftime("%Y%m%d-%H%M%S")
 
+    """Ausgabe Datein erstellen"""
+    print("\nAusgabe Datein erzeugen ...")
+    t9 = time.time()
 
-
+    """Info über alle Zellen"""
+    print_cell_info(cells)
 
     """Ausgabe der unused_capacity und Erzeugung eines Plots"""
-
     print("Values of unused_capacity, cell_charging_cap, and diff:")
     for t in charging_model.nb_timestep:
         for c in charging_model.nb_cell:
@@ -210,46 +219,28 @@ for fleet_filename in ["___flotten_random_test2"]:
                 diff = unused_capacity_value - cell_capacity
                 print(f"timestep: {t}, cell: {c}, unused_capacity: {unused_capacity_value}, cell_capacity: {cell_capacity}, diff: {diff}")
 
-    # Stellen sicher, dass nb_timestep und nb_cell als Listen oder Bereiche vorliegen
-    timesteps = list(charging_model.nb_timestep)
-    cells = list(charging_model.nb_cell)
+    #print_fleet_39_activity(charging_model)
 
-    # Daten für die Visualisierung berechnen
-    nb_timestep = len(timesteps)
-    nb_cell = len(cells)
-    unused_capacity_values = np.zeros((nb_timestep, nb_cell))
+    """Aufruf der Plot-Funktion für die Darstellung der unused_capacity"""
+    unused_capacity_35000_to_48000(charging_model, time_of_optimization)
+    unused_capacity_20000_to_35000(charging_model, time_of_optimization)
+    unused_capacity_15000_to_20000(charging_model, time_of_optimization)
+    unused_capacity_10000_to_15000(charging_model, time_of_optimization)
+    unused_capacity_7000_to_10000(charging_model, time_of_optimization)
+    unused_capacity_4000_to_7000(charging_model, time_of_optimization)
+    unused_capacity_2000_to_4000(charging_model, time_of_optimization)
+    unused_capacity_1000_to_2000(charging_model, time_of_optimization)
+    unused_capacity_up_to_1000(charging_model, time_of_optimization)
 
-    for t in timesteps:
-        for c in cells:
-            if (t, c) in charging_model.t_cs:
-                unused_capacity_values[t, c] = charging_model.unused_capacity[t, c].value
-    plt.figure(figsize=(14, 8))
+    """Detaillierte Ausgabe für einzelne Zellen"""
+    print("Debug: Unused capacity values for cell 13:")
+    for t in charging_model.nb_timestep:
+        if (t, 13) in charging_model.t_cs:
+            unused_capacity_value = charging_model.unused_capacity[t, 13].value
+            print(f"Timestep: {t}, Unused capacity: {unused_capacity_value}")
 
-    for c in [13,19,10,9]:
-        plt.plot(timesteps, unused_capacity_values[:, c], label=f'Cell {cells[c]}')
 
-    plt.xlabel('Timestep')
-    plt.ylabel('Unused Capacity')
-    plt.title('Unused Capacity Over Time for Each Cell')
-    plt.legend(loc='upper right')
-    plt.grid(True)
-    # Verzeichnis für die Speicherung erstellen, falls es nicht existiert
-    output_dir = os.path.join('results', 'Pictures')
-    os.makedirs(output_dir, exist_ok=True)
 
-    # Speichern des Diagramms
-    output_path = os.path.join(output_dir, f'unused_capacity_over_time_{time_of_optimization}.png')
-    plt.savefig(output_path)
-    #plt.show()
-
-    # Ausgabe der Werte von Cap_unused für jede Zelle
-    print("\nValues of Cap_unused for each cell:")
-    for c in charging_model.nb_cell:
-        print(f"Cell {c}: Cap_unused = {charging_model.Cap_unused[c].value}")
-
-    """Ausgabe Datein erstellen"""
-    print("\nAusgabe Datein erzeugen ...")
-    t8 = time.time()
 
     """AusgabeDateien"""
     write_output_file_charging_stations(charging_model, time_of_optimization, fleet_filename)               #n_in_wait_charge, Queue=wait+wait_charge_next, Summe(n_charge)
@@ -265,7 +256,19 @@ for fleet_filename in ["___flotten_random_test2"]:
     write_output_file_Fleet_infos(charging_model, time_of_optimization, fleet_filename)                     #Flotten Infos
     export_energy_comparison_to_excel(charging_model, time_of_optimization)
 
-    print("... took ", str(time.time() - t8), " sec")
+
+    # Ergebnisse aus dem Modell holen
+    results = get_variables_from_model2(charging_model)
+
+    # Diagramme für Fahrzeug_Anzahl_Variablen
+    plot_variable_over_time(charging_model, 'n_pass', results, time_of_optimization, 'n_pass')
+    plot_variable_over_time(charging_model, 'n_in', results, time_of_optimization, 'n_in')
+    plot_variable_over_time(charging_model, 'n_incoming_vehicles', results, time_of_optimization, 'n_incoming_vehicles')
+    plot_variable_over_time(charging_model, 'n_arrived_vehicles', results, time_of_optimization, 'n_arrived_vehicles')
+    plot_variable_over_time(charging_model, 'n_in_wait_charge', results, time_of_optimization, 'n_in_wait_charge')
+    plot_combined_variable_over_time(charging_model, results, time_of_optimization)
+
+    print("... took ", str(time.time() - t9), " sec")
 
     print("")
 
@@ -701,6 +704,7 @@ for fleet_filename in ["___flotten_random_test2"]:
     print("E_consumed_exit_charge ist:", np.sum(E_consumed_exit_charge))
     print("n_finished_charging ist:", np.sum(n_finished_charging))
     print("unused ist:", np.sum(unused_capacity))
+
 
 
     # Endzeitpunkt
