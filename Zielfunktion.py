@@ -29,7 +29,8 @@ def minimize_waiting_and_charging(model: ConcreteModel):
                     model.n_wait[el] + model.n_wait_charge_next[el]
                     for el in model.charging_cells_key_set
             )
+            - quicksum(model.Unused_capacity_new[c] for c in model.cs_cells)
         ),
-        #sense=minimize,
+        sense=minimize,
 
     )

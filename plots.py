@@ -322,6 +322,41 @@ def unused_capacity_up_to_1000(charging_model, time_of_optimization):
     plt.savefig(output_path)
     #plt.show()
 
+def unused_capacity_A2(charging_model, time_of_optimization):
+    # Stellen sicher, dass nb_timestep und nb_cell als Listen oder Bereiche vorliegen
+    timesteps = list(charging_model.nb_timestep)
+    cells = list(charging_model.nb_cell)
+
+    # Daten für die Visualisierung berechnen
+    nb_timestep = len(timesteps)
+    nb_cell = len(cells)
+    unused_capacity_values = np.zeros((nb_timestep, nb_cell))
+
+    for t in timesteps:
+        for c in cells:
+            if (t, c) in charging_model.t_cs:
+                unused_capacity_values[t, c] = charging_model.unused_capacity[t, c].value
+
+    plt.figure(figsize=(14, 8))
+
+    for c in [1, 2, 3, 6, 10, 12, 13]:  #Cells for A2
+        plt.plot(timesteps, unused_capacity_values[:, c], label=f'Cell {c}')
+
+    plt.xlabel('Timestep')
+    plt.ylabel('Unused Capacity')
+    plt.title('Unused Capacity Over Time for Cells of the A2')
+    plt.legend(loc='upper right')
+    plt.grid(True)
+
+    # Verzeichnis für die Speicherung erstellen, falls es nicht existiert
+    output_dir = os.path.join('results', 'pictures')
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Speichern des Diagramms
+    output_path = os.path.join(output_dir, f'unused_capacity_A2_{time_of_optimization}.png')
+    plt.savefig(output_path)
+    #plt.show()
+
 def plot_total_energy_charged(timesteps, total_energy_charged, time_of_optimization):
     """
     Erstellt ein Diagramm für die gesamte geladene Energie über die Zeit.
@@ -467,3 +502,65 @@ def plot_combined_variable_over_time(model, results, time_of_optimization):
 
     # Anzeigen des Diagramms
     #plt.show()
+
+
+def plot_unused_capacity_new(model, time_of_optimization):
+    """
+    Plots the Unused_capacity_new variable for all cells with charging stations,
+    marks the cell capacity as horizontal red lines, and fills the space between
+    unused capacity and cell capacity with green.
+
+    Parameters:
+    - model: The Pyomo model containing the optimization results.
+    - time_of_optimization: Timestamp or identifier to include in the file name.
+    """
+    # Create a list to store the cell indices, corresponding unused capacities, and cell capacities
+    cell_indices = []
+    unused_capacities = []
+    cell_capacities = []
+
+    # Iterate through cells with charging stations
+    for c in model.cs_cells:
+        if c in model.Unused_capacity_new:
+            unused_capacity_value = model.Unused_capacity_new[c].value
+            cell_capacity = model.cell_charging_cap[c]  # Retrieve the capacity for each cell
+
+            if unused_capacity_value is not None:
+                cell_indices.append(c)
+                unused_capacities.append(unused_capacity_value)
+                cell_capacities.append(cell_capacity)
+            else:
+                print(f"Warning: Unused capacity for cell {c} is not set.")
+        else:
+            print(f"Warning: No Unused_capacity_new value found for cell {c}")
+
+    # Plotting the unused capacities as bars
+    plt.figure(figsize=(10, 6))
+    plt.bar(cell_indices, unused_capacities, color='blue', alpha=0.7, label='Unused Capacity')
+
+    # Filling the space between unused capacity and cell capacity
+    for i, c in enumerate(cell_indices):
+        plt.fill_between([c - 0.4, c + 0.4], unused_capacities[i], cell_capacities[i], color='green', alpha=0.7,
+                         label='Used Capacity' if i == 0 else "")
+
+    # Adding horizontal lines for cell capacities
+    plt.hlines(cell_capacities, [i - 0.4 for i in cell_indices], [i + 0.4 for i in cell_indices], colors='red',
+               label='Cell Capacity', linewidth=2)
+
+    plt.xlabel('Cell Index')
+    plt.ylabel('Capacity (kW)')
+    plt.title('Unused Capacity, Used Capacity und Cell Capacity for Cells with Charging Station')
+    plt.xticks(rotation=45)
+    plt.legend()
+    plt.tight_layout()
+
+    # Verzeichnis für die Speicherung erstellen, falls es nicht existiert
+    output_dir = os.path.join('results', 'Pictures')
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Speichern des Diagramms
+    output_path = os.path.join(output_dir, f'unused_capacity_new{time_of_optimization}.png')
+    plt.savefig(output_path)
+
+    # Optional: Anzeigen des Diagramms
+    # plt.show()

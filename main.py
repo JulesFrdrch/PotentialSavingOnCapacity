@@ -6,6 +6,7 @@ from Zielfunktion import *
 from plots import *
 from input_capacity_reduction import *
 from uncontrolled_cars import *
+from unused_capacities import *
 #from _optimization_utils import write_output_files
 #from _optimization_utils import *
 
@@ -42,9 +43,9 @@ nb_time_steps = 120     #120 Time Steps = 30 Stunden, 96 für 24 Stunden
 
 """Zelleninformationen einlesen"""
 #cells = pd.read_csv("data/Zellen_input_reduzierung_test.csv")
-cells = pd.read_csv("data/20220722-232828_cells_input.csv")
-#cells = pd.read_csv("data/___cells_only3flotten.csv")
-
+#cells = pd.read_csv("data/20220722-232828_cells_input.csv")
+cells = pd.read_csv("data/2024_A2_cell_input.csv")
+print(cells)
 
 #cells = pd.read_csv("data/___cells_random_test2_allCS.csv")
 nb_cells = len(cells) #Anzahl der Zellen
@@ -54,9 +55,11 @@ time_frame = range(0, nb_time_steps + 1) #Zeithorizont Len=121
 
 """Flotteninformationen einlesen"""
 #for fleet_filename in ["summer_workdayfleet_input_20220719_compressed_probe"]:
-for fleet_filename in ["___flotten_random_test2"]:
+#for fleet_filename in ["___flotten_random_test1"]:                                                      #Flotte 37 Test
+#for fleet_filename in ["___flotten_random_test2"]:
 #for fleet_filename in ["___flotten_random_test3"]:                                                     #200.000er Test auf Flotte 1
 #for fleet_filename in ["___flotten_wenige_Fahrzeuge"]:
+for fleet_filename in ["2024_A2_fleets_test1"]:                                                         #A2 Case Study
 
     fleet_df = read_fleets(pd.read_csv("data/" + fleet_filename + ".csv", delimiter=";"))
     print('Die Flotten CSV Datei konnte erfolgreich eingelesen werden')
@@ -65,7 +68,7 @@ for fleet_filename in ["___flotten_random_test2"]:
     fleet_df["fleet_id"] = range(0, len(fleet_df))
     fleet_df = fleet_df.set_index("fleet_id")
     print(fleet_df)
-    fleet_df = fleet_df[fleet_df.index.isin(range(0, 50))]                                                                   #0, 3 = 3 Einträge (0,1,2)
+    #fleet_df = fleet_df[fleet_df.index.isin(range(0, 10))]                                                                   #0, 3 = 3 Einträge (0,1,2)
     nb_fleets = len(fleet_df)
     print("Anzahl der Time Steps:\t",nb_time_steps,"Dies entspricht:",nb_time_steps*0.25,"Stunde" ,"\nAnzahl der Zellen:\t\t", nb_cells,"\nAnzahl der Flotten:\t\t" ,nb_fleets)
     #print(fleet_df.loc[2]) #Eine Zeile auslesen
@@ -110,8 +113,8 @@ for fleet_filename in ["___flotten_random_test2"]:
 
     """Change of the input capacities"""
     # Reduktion aller Zellen-Kapazitäten
-    reduction_factor = 0.5  # Reduzieren der Kapazitäten um 50%, 0.8 wäre 20%
-    reduce_cell_capacities(charging_model, reduction_factor)
+    #reduction_factor = 0.5  # Reduzieren der Kapazitäten um 50%, 0.8 wäre 20%
+    #reduce_cell_capacities(charging_model, reduction_factor)
 
     # Reduktion ausgewählter Zellen-Kapazitäten
     #selected_cells = [2, 3, 4, 5]  # IDs der Zellen, deren Kapazitäten reduziert werden sollen
@@ -133,31 +136,36 @@ for fleet_filename in ["___flotten_random_test2"]:
 
     """Zellen initialisieren"""
     print("\nInitializing cell geometry ...")
-    t3 = time.time()  # Warum passiert hier nix?
+    t99 = time.time()  # Warum passiert hier nix?
     # initialize_cells(charging_model, cells)
-    print("... took ", str(time.time() - t3), " sec")
+    print("... took ", str(time.time() - t99), " sec")
 
     """Zustände definieren"""
     print("\nConstraining vehicles activities and states ...")
-    t4 = time.time()
+    t3 = time.time()
     constr_vehicle_states(charging_model)                                                       #Zustände definiert wie auf Folie
-    print("... took ", str(time.time() - t4), " sec")
+    print("... took ", str(time.time() - t3), " sec")
 
     """Fehlende Funktionen in Antonias Programm"""
     print("\nFehlende Funktionen ...")
-    t5 = time.time()
+    t4 = time.time()
     FehlendeFunktionen(charging_model)                                                          #Fehlende Funktionen
-    print("... took ", str(time.time() - t5), " sec")
+    print("... took ", str(time.time() - t4), " sec")
 
     print("\nConstraining charging activity at cells ...")
-    t6 = time.time()
+    t5 = time.time()
     restraint_charging_capacity(charging_model)                                                 #Ladeinfrastruktur
-    print("... took ", str(time.time() - t6), " sec")
+    print("... took ", str(time.time() - t5), " sec")
 
 
     print("\nConstraining random fleet cars ...")
+    t6 = time.time()
+    #uncontrolled_cars_decision(charging_model)
+    print("... took ", str(time.time() - t6), " sec")
+
+    print("\nConstraining unused capacities ...")
     t7 = time.time()
-    #define_fleet_37_routing_constraints(charging_model)                                            #uncontrolled_cars
+    unused_capacities(charging_model)
     print("... took ", str(time.time() - t7), " sec")
 
 
@@ -201,6 +209,22 @@ for fleet_filename in ["___flotten_random_test2"]:
 
     time_of_optimization = time.strftime("%Y%m%d-%H%M%S")
 
+
+    """Ausgabe für unused_capacity_new (nur c)"""
+    # Correctly iterating over the indices
+    for c in charging_model.nb_cell:
+        # Safely accessing the value if it's defined
+        if c in charging_model.Unused_capacity_new:
+            unused_capacity_value = charging_model.Unused_capacity_new[c].value
+            if unused_capacity_value is not None:
+                print(f"Cell {c}: Unused Capacity = {unused_capacity_value}")
+            else:
+                print(f"Cell {c}: Unused Capacity is not set.")
+        else:
+            print(f"Cell {c}: No such index in Unused_capacity_new")
+
+    plot_unused_capacity_new(charging_model, time_of_optimization)
+
     """Ausgabe Datein erstellen"""
     print("\nAusgabe Datein erzeugen ...")
     t9 = time.time()
@@ -208,7 +232,7 @@ for fleet_filename in ["___flotten_random_test2"]:
     """Info über alle Zellen"""
     print_cell_info(cells)
 
-    """Ausgabe der unused_capacity und Erzeugung eines Plots"""
+    """Ausgabe der unused_capacity (c, t) und Erzeugung eines Plots"""
     print("Values of unused_capacity, cell_charging_cap, and diff:")
     for t in charging_model.nb_timestep:
         for c in charging_model.nb_cell:
@@ -219,18 +243,23 @@ for fleet_filename in ["___flotten_random_test2"]:
                 diff = unused_capacity_value - cell_capacity
                 print(f"timestep: {t}, cell: {c}, unused_capacity: {unused_capacity_value}, cell_capacity: {cell_capacity}, diff: {diff}")
 
-    #print_fleet_39_activity(charging_model)
 
+    """Plots nur für gesamte Input Daten"""
     """Aufruf der Plot-Funktion für die Darstellung der unused_capacity"""
-    unused_capacity_35000_to_48000(charging_model, time_of_optimization)
-    unused_capacity_20000_to_35000(charging_model, time_of_optimization)
-    unused_capacity_15000_to_20000(charging_model, time_of_optimization)
-    unused_capacity_10000_to_15000(charging_model, time_of_optimization)
-    unused_capacity_7000_to_10000(charging_model, time_of_optimization)
-    unused_capacity_4000_to_7000(charging_model, time_of_optimization)
-    unused_capacity_2000_to_4000(charging_model, time_of_optimization)
-    unused_capacity_1000_to_2000(charging_model, time_of_optimization)
-    unused_capacity_up_to_1000(charging_model, time_of_optimization)
+    # TODO: Funktion drauf machen
+    #unused_capacity_35000_to_48000(charging_model, time_of_optimization)
+    #unused_capacity_20000_to_35000(charging_model, time_of_optimization)
+    #unused_capacity_15000_to_20000(charging_model, time_of_optimization)
+    #unused_capacity_10000_to_15000(charging_model, time_of_optimization)
+    #unused_capacity_7000_to_10000(charging_model, time_of_optimization)
+    #unused_capacity_4000_to_7000(charging_model, time_of_optimization)
+    #unused_capacity_2000_to_4000(charging_model, time_of_optimization)
+    #unused_capacity_1000_to_2000(charging_model, time_of_optimization)
+    #unused_capacity_up_to_1000(charging_model, time_of_optimization)
+
+    """Plots nur für A2"""
+    """Aufruf der Plot-Funktion für die Darstellung der unused_capacity"""
+    unused_capacity_A2(charging_model, time_of_optimization)
 
     """Detaillierte Ausgabe für einzelne Zellen"""
     print("Debug: Unused capacity values for cell 13:")
@@ -251,7 +280,7 @@ for fleet_filename in ["___flotten_random_test2"]:
     write_output_file_n_pass(charging_model, time_of_optimization, fleet_filename)                          #n_in
     write_output_file_Bewegung(charging_model, time_of_optimization, fleet_filename)                        #n_in, n_in_wait_charge, n_pass
     write_output_file_Charging(charging_model, time_of_optimization, fleet_filename)                        #Für 1,2,3 (n_charge, n_output_charged, n_finished)
-    write_output_file_Energy_charged(charging_model, time_of_optimization, fleet_filename)                   #Summe(E_charged1 + E_charged2 + E_charged3)
+    #write_output_file_Energy_charged(charging_model, time_of_optimization, fleet_filename)                   #Summe(E_charged1 + E_charged2 + E_charged3)
     write_output_file_Energy_charged_each(charging_model, time_of_optimization, fleet_filename)              #E_charged1, E_charged2, E_charged3
     write_output_file_Fleet_infos(charging_model, time_of_optimization, fleet_filename)                     #Flotten Infos
     export_energy_comparison_to_excel(charging_model, time_of_optimization)

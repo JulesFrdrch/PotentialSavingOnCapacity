@@ -3,6 +3,8 @@ from pyomo.core import ConcreteModel
 from scipy.stats import norm
 from pyomo.environ import *
 import numpy as np
+
+
 from utils import *
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -16,6 +18,8 @@ import time
 from pyomo.core.util import quicksum
 from datetime import datetime
 from pyomo.environ import ConcreteModel, Objective, quicksum, minimize, maximize
+from uncontrolled_cars import *
+from unused_capacities import *
 
 """Read Fleets"""
 def read_fleets(fleet_df):
@@ -227,6 +231,7 @@ def add_decision_variables_and_create_key_sets(
     # Neue Variable für nicht genutzte Kapazität
     model.unused_capacity = Var(model.t_cs, within=NonNegativeReals)
     model.Unused_capacity_new = Var(model.cs_cells, within=NonNegativeReals)
+    #model.Unused_capacity_new = Var(model.nb_cell, within=NonNegativeReals)
 
 
 def create_set_init(model):
@@ -755,10 +760,8 @@ def constr_vehicle_states(model: ConcreteModel):
     )
     del model.key_set_without_first_t_CS
 
-    """Unused_capacity"""
-    model.unused_capacity_constraint = Constraint(model.t_cs,
-                                                           rule=unused_capacity_constraint_rule)
-    #model.ChargingConstraint = Constraint(model.t_cs, rule=charging_constraint)
+
+
 
 
 
@@ -766,9 +769,25 @@ def constr_vehicle_states(model: ConcreteModel):
 """Charging"""
 def restraint_charging_capacity(model: ConcreteModel):
 
-    model.c_cell_capacity = Constraint(model.t_cs, rule=charging_at_restarea)
+    """Mit unused_capacities_NEW"""
+    #model.c_cell_capacity = Constraint(model.t_cs, rule=charging_at_restarea_neu_alte_Wirkungsgrad_regel)
+    model.c_cell_capacity = Constraint(model.t_cs, rule=charging_at_restarea_neu)
+    """Ohne unused_capacities_NEW"""
+    #model.c_cell_capacity = Constraint(model.t_cs, rule=charging_at_restarea)
     #del model.t_cs
 
+"""Uncontrolled / random Cars"""
+def uncontrolled_cars_decision(model: ConcreteModel):
+    model.balance_n_cell37 = Constraint(model.key_set, rule=balance_n_cell37)
+    # model.balance_q_cell37 = Constraint(model.key_set, rule=balance_q_cell37)
+
+"""Unused_capacity"""
+def unused_capacities(model: ConcreteModel):
+
+    """unused_capacity mit c und t"""
+    model.unused_capacity_constraint = Constraint(model.t_cs,rule=unused_capacity_constraint_rule)
+    """Unused_capacity_new nur mit c"""
+    #model.ChargingConstraint = Constraint(model.t_cs, rule=charging_constraint)
 
 
 def charging_at_restarea_alt(model: ConcreteModel, t, c):
@@ -795,7 +814,7 @@ def charging_at_restarea(model: ConcreteModel, t, c):
 
 
 
-def charging_at_restarea_neu(model: ConcreteModel, t, c):
+def charging_at_restarea_neu(model: ConcreteModel, t, c):                                                                   #gleich wie bei unused_capacities.py
     return (
             quicksum(
                 (model.E_charge1[t, c, f] + model.E_charge2[t, c, f] + model.E_charge3[
@@ -806,24 +825,12 @@ def charging_at_restarea_neu(model: ConcreteModel, t, c):
             <= (model.cell_charging_cap[c] - model.Unused_capacity_new[c]) * model.time_resolution
     )
 
-
-
-
-"""Unused_capacity"""
-
-
-def unused_capacity_constraint_rule(model, t, c):
-    total_charge = sum(
-        model.E_charge1[t, c, f] + model.E_charge2[t, c, f] + model.E_charge3[t, c, f] for f in model.nb_fleet if
-        (t, c, f) in model.charging_cells_key_set)
-    return model.unused_capacity[t, c] == model.cell_charging_cap[c] - total_charge
-
-def charging_constraint(model: ConcreteModel, t, c):
+def charging_at_restarea_neu_alte_Wirkungsgrad_regel(model: ConcreteModel, t, c):
     return (
         quicksum(
-            (model.E_charge1[t, c, f] + model.E_charge2[t, c, f] + model.E_charge3[t, c, f]) * model.ladewirkungsgrad
+            (model.E_charge1[t, c, f] + model.E_charge2[t, c, f] + model.E_charge3[t, c, f])
             for f in model.nb_fleet
             if (t, c, f) in model.charging_cells_key_set
         )
-        <= (model.cell_charging_cap[c] - model.Unused_capacity_new[c]) * model.time_resolution
+        <= (model.cell_charging_cap[c] - model.Unused_capacity_new[c]) * model.time_resolution * model.ladewirkungsgrad
     )
