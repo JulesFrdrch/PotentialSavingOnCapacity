@@ -187,15 +187,31 @@ for fleet_filename in ["2024_A2_fleets_test2"]:                                 
 
 
 
-    """Gurobi-Solver"""
+    # Erstellen des Gurobi Solvers
     opt = SolverFactory("gurobi")
-    # opt.options["TimeLimit"] = 14400                                                                                      #Zeitlimit in sec
-    # opt.options["OptimalityTol"] = 1e-2                                                                                   #Toleranz für Optimallösung
-    # opt.options["BarConvTol"] = 1e-11                                                                                     #Konvergenztoleranz für die Barrieremethode
-    # opt.options["Cutoff"] = 1e-3                                                                                          #Wert ab dem der Solver die Suche nach einer Lösung abbricht
-    # opt.options["CrossoverBasis"] = 0                                                                                     #Deaktiviert die Verwendung von Crossover-Basislösungen
-    opt.options["Crossover"] = 0                                                                                            #Deaktiviert das Crossover-Verfahren
-    opt.options["Method"] = 2                                                                                               #Legt die Methode fest: Siehe Dokument!
+
+    # Optional: Zeitlimit setzen (hier auskommentiert, kannst du anpassen)
+    # opt.options["TimeLimit"] = 14400  # Zeitlimit in Sekunden (4 Stunden)
+
+    # Optional: Toleranz für die Optimallösung setzen (hier auskommentiert)
+    # opt.options["OptimalityTol"] = 1e-2
+
+    # Optional: Konvergenztoleranz für die Barrieremethode (hier auskommentiert)
+    # opt.options["BarConvTol"] = 1e-11
+
+    # Optional: Grenzwert, ab dem der Solver die Suche abbricht (hier auskommentiert)
+    # opt.options["Cutoff"] = 1e-3
+
+    # Optional: Deaktiviert die Verwendung von Crossover-Basislösungen
+    opt.options["Crossover"] = 0  # Deaktiviert das Crossover-Verfahren
+
+    # Methode festlegen (2 = Barrieremethode für kontinuierliche Probleme)
+    opt.options["Method"] = 2
+
+    # Hier setzen wir das relative Gap auf 1% (MIPGap 0.01 = 1%)
+    opt.options["MIPGap"] = 0.01  # Fügt eine Lücke von 1% hinzu
+
+    # Optimierung starten
     opt_success = opt.solve(
         charging_model, report_timing=True, tee=True                                                                        #Lösen des Optimierungsmodells
     )                                                                                                                       #report_time=True & tee=True aktiieren das Berichtswesen
