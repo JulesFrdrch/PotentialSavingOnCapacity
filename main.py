@@ -44,7 +44,9 @@ nb_time_steps = 120     #120 Time Steps = 30 Stunden, 96 für 24 Stunden
 """Zelleninformationen einlesen"""
 #cells = pd.read_csv("data/Zellen_input_reduzierung_test.csv")
 #cells = pd.read_csv("data/20220722-232828_cells_input.csv")
-cells = pd.read_csv("data/2024_A2_cell_input.csv")
+#cells = pd.read_csv("data/2024_A2_cell_input.csv")                                                      #A2 0 bis 13
+cells = pd.read_csv("data/2024_A2_cell_input_empty_start_end.csv")                                          #A2 1 bis 14 und leere erste und letzte Zelle
+
 print(cells)
 
 #cells = pd.read_csv("data/___cells_random_test2_allCS.csv")
@@ -59,7 +61,7 @@ time_frame = range(0, nb_time_steps + 1) #Zeithorizont Len=121
 #for fleet_filename in ["___flotten_random_test2"]:
 #for fleet_filename in ["___flotten_random_test3"]:                                                     #200.000er Test auf Flotte 1
 #for fleet_filename in ["___flotten_wenige_Fahrzeuge"]:
-for fleet_filename in ["2024_A2_fleets_test1"]:                                                         #A2 Case Study
+for fleet_filename in ["2024_A2_fleets_test2"]:                                                         #A2 Case Study
 
     fleet_df = read_fleets(pd.read_csv("data/" + fleet_filename + ".csv", delimiter=";"))
     print('Die Flotten CSV Datei konnte erfolgreich eingelesen werden')
@@ -292,10 +294,23 @@ for fleet_filename in ["2024_A2_fleets_test1"]:                                 
     # Diagramme für Fahrzeug_Anzahl_Variablen
     plot_variable_over_time(charging_model, 'n_pass', results, time_of_optimization, 'n_pass')
     plot_variable_over_time(charging_model, 'n_in', results, time_of_optimization, 'n_in')
+    plot_variable_over_time(charging_model, 'n_wait', results, time_of_optimization, 'n_wait')
+    plot_variable_over_time(charging_model, 'n_wait_charge_next', results, time_of_optimization, 'n_wait_charge_next')
     plot_variable_over_time(charging_model, 'n_incoming_vehicles', results, time_of_optimization, 'n_incoming_vehicles')
     plot_variable_over_time(charging_model, 'n_arrived_vehicles', results, time_of_optimization, 'n_arrived_vehicles')
     plot_variable_over_time(charging_model, 'n_in_wait_charge', results, time_of_optimization, 'n_in_wait_charge')
     plot_combined_variable_over_time(charging_model, results, time_of_optimization)
+
+    # Diagramme für die wartenden Fahrzeuge in den Zellen mit CS der A2
+    plot_waiting_vehicles_cell1(charging_model, time_of_optimization)
+    plot_waiting_vehicles_cell2(charging_model, time_of_optimization)
+    plot_waiting_vehicles_cell3(charging_model, time_of_optimization)
+    plot_waiting_vehicles_cell4(charging_model, time_of_optimization)
+    plot_waiting_vehicles_cell7(charging_model, time_of_optimization)
+    plot_waiting_vehicles_cell11(charging_model, time_of_optimization)
+    plot_waiting_vehicles_cell13(charging_model, time_of_optimization)
+    plot_waiting_vehicles_cell14(charging_model, time_of_optimization)
+
 
     print("... took ", str(time.time() - t9), " sec")
 

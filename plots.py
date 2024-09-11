@@ -564,3 +564,516 @@ def plot_unused_capacity_new(model, time_of_optimization):
 
     # Optional: Anzeigen des Diagramms
     # plt.show()
+
+
+def plot_waiting_vehicles_cell1(model, time_of_optimization):
+    """
+    Plots n_wait and n_wait_charge_next over time for cell 1.
+
+    Parameters:
+    - model: The Pyomo model containing the optimization results.
+    - time_of_optimization: Timestamp or identifier to include in the file name.
+    """
+    # Zelle, für die geplottet werden soll (Anpassung möglich)
+    cell = 1  # Achte darauf, ob deine Zellen bei 0 oder 1 beginnen
+
+    # Alle Zeitschritte abrufen
+    time_steps = sorted(model.nb_timestep)
+
+    # Listen zum Speichern der Werte
+    n_wait_values = []
+    n_wait_charge_next_values = []
+
+    # Über alle Zeitschritte iterieren
+    for t in time_steps:
+        # Gesamtwerte für den aktuellen Zeitschritt initialisieren
+        n_wait_total = 0
+        n_wait_charge_next_total = 0
+
+        # Über alle Flotten iterieren
+        for f in model.nb_fleet:
+            key = (t, cell, f)
+            if key in model.charging_cells_key_set:
+                # Werte abrufen
+                n_wait_value = model.n_wait[key].value
+                n_wait_charge_next_value = model.n_wait_charge_next[key].value
+
+                # Sicherstellen, dass die Werte nicht None sind
+                if n_wait_value is not None:
+                    n_wait_total += n_wait_value
+                if n_wait_charge_next_value is not None:
+                    n_wait_charge_next_total += n_wait_charge_next_value
+
+        # Gesamtwerte zur Liste hinzufügen
+        n_wait_values.append(n_wait_total)
+        n_wait_charge_next_values.append(n_wait_charge_next_total)
+
+    # Plot erstellen
+    plt.figure(figsize=(12, 6))
+    plt.plot(time_steps, n_wait_values, label='n_wait', marker='o')
+    plt.plot(time_steps, n_wait_charge_next_values, label='n_wait_charge_next', marker='x')
+    plt.xlabel('timestep')
+    plt.ylabel('Amount of vehicle')
+    plt.title(f'Waiting vehicle in Cell {cell}')
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+
+    # Verzeichnis für die Speicherung erstellen, falls es nicht existiert
+    output_dir = os.path.join('results', 'Pictures')
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Diagramm speichern
+    output_path = os.path.join(output_dir, f'waiting_vehicles_cell{cell}_{time_of_optimization}.png')
+    plt.savefig(output_path)
+
+    # Optional: Diagramm anzeigen
+    # plt.show()
+
+def plot_waiting_vehicles_cell2(model, time_of_optimization):
+    """
+    Plots n_wait and n_wait_charge_next over time for cell 1.
+
+    Parameters:
+    - model: The Pyomo model containing the optimization results.
+    - time_of_optimization: Timestamp or identifier to include in the file name.
+    """
+    # Zelle, für die geplottet werden soll (Anpassung möglich)
+    cell = 2  # Achte darauf, ob deine Zellen bei 0 oder 1 beginnen
+
+    # Alle Zeitschritte abrufen
+    time_steps = sorted(model.nb_timestep)
+
+    # Listen zum Speichern der Werte
+    n_wait_values = []
+    n_wait_charge_next_values = []
+
+    # Über alle Zeitschritte iterieren
+    for t in time_steps:
+        # Gesamtwerte für den aktuellen Zeitschritt initialisieren
+        n_wait_total = 0
+        n_wait_charge_next_total = 0
+
+        # Über alle Flotten iterieren
+        for f in model.nb_fleet:
+            key = (t, cell, f)
+            if key in model.charging_cells_key_set:
+                # Werte abrufen
+                n_wait_value = model.n_wait[key].value
+                n_wait_charge_next_value = model.n_wait_charge_next[key].value
+
+                # Sicherstellen, dass die Werte nicht None sind
+                if n_wait_value is not None:
+                    n_wait_total += n_wait_value
+                if n_wait_charge_next_value is not None:
+                    n_wait_charge_next_total += n_wait_charge_next_value
+
+        # Gesamtwerte zur Liste hinzufügen
+        n_wait_values.append(n_wait_total)
+        n_wait_charge_next_values.append(n_wait_charge_next_total)
+
+    # Plot erstellen
+    plt.figure(figsize=(12, 6))
+    plt.plot(time_steps, n_wait_values, label='n_wait', marker='o')
+    plt.plot(time_steps, n_wait_charge_next_values, label='n_wait_charge_next', marker='x')
+    plt.xlabel('timestep')
+    plt.ylabel('Amount of vehicle')
+    plt.title(f'Waiting vehicle in Cell {cell}')
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+
+    # Verzeichnis für die Speicherung erstellen, falls es nicht existiert
+    output_dir = os.path.join('results', 'Pictures')
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Diagramm speichern
+    output_path = os.path.join(output_dir, f'waiting_vehicles_cell{cell}_{time_of_optimization}.png')
+    plt.savefig(output_path)
+
+    # Optional: Diagramm anzeigen
+    # plt.show()
+
+def plot_waiting_vehicles_cell3(model, time_of_optimization):
+    """
+    Plots n_wait and n_wait_charge_next over time for cell 1.
+
+    Parameters:
+    - model: The Pyomo model containing the optimization results.
+    - time_of_optimization: Timestamp or identifier to include in the file name.
+    """
+    # Zelle, für die geplottet werden soll (Anpassung möglich)
+    cell = 3  # Achte darauf, ob deine Zellen bei 0 oder 1 beginnen
+
+    # Alle Zeitschritte abrufen
+    time_steps = sorted(model.nb_timestep)
+
+    # Listen zum Speichern der Werte
+    n_wait_values = []
+    n_wait_charge_next_values = []
+
+    # Über alle Zeitschritte iterieren
+    for t in time_steps:
+        # Gesamtwerte für den aktuellen Zeitschritt initialisieren
+        n_wait_total = 0
+        n_wait_charge_next_total = 0
+
+        # Über alle Flotten iterieren
+        for f in model.nb_fleet:
+            key = (t, cell, f)
+            if key in model.charging_cells_key_set:
+                # Werte abrufen
+                n_wait_value = model.n_wait[key].value
+                n_wait_charge_next_value = model.n_wait_charge_next[key].value
+
+                # Sicherstellen, dass die Werte nicht None sind
+                if n_wait_value is not None:
+                    n_wait_total += n_wait_value
+                if n_wait_charge_next_value is not None:
+                    n_wait_charge_next_total += n_wait_charge_next_value
+
+        # Gesamtwerte zur Liste hinzufügen
+        n_wait_values.append(n_wait_total)
+        n_wait_charge_next_values.append(n_wait_charge_next_total)
+
+    # Plot erstellen
+    plt.figure(figsize=(12, 6))
+    plt.plot(time_steps, n_wait_values, label='n_wait', marker='o')
+    plt.plot(time_steps, n_wait_charge_next_values, label='n_wait_charge_next', marker='x')
+    plt.xlabel('timestep')
+    plt.ylabel('Amount of vehicle')
+    plt.title(f'Waiting vehicle in Cell {cell}')
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+
+    # Verzeichnis für die Speicherung erstellen, falls es nicht existiert
+    output_dir = os.path.join('results', 'Pictures')
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Diagramm speichern
+    output_path = os.path.join(output_dir, f'waiting_vehicles_cell{cell}_{time_of_optimization}.png')
+    plt.savefig(output_path)
+
+    # Optional: Diagramm anzeigen
+    # plt.show()
+
+def plot_waiting_vehicles_cell4(model, time_of_optimization):
+    """
+    Plots n_wait and n_wait_charge_next over time for cell 1.
+
+    Parameters:
+    - model: The Pyomo model containing the optimization results.
+    - time_of_optimization: Timestamp or identifier to include in the file name.
+    """
+    # Zelle, für die geplottet werden soll (Anpassung möglich)
+    cell = 4  # Achte darauf, ob deine Zellen bei 0 oder 1 beginnen
+
+    # Alle Zeitschritte abrufen
+    time_steps = sorted(model.nb_timestep)
+
+    # Listen zum Speichern der Werte
+    n_wait_values = []
+    n_wait_charge_next_values = []
+
+    # Über alle Zeitschritte iterieren
+    for t in time_steps:
+        # Gesamtwerte für den aktuellen Zeitschritt initialisieren
+        n_wait_total = 0
+        n_wait_charge_next_total = 0
+
+        # Über alle Flotten iterieren
+        for f in model.nb_fleet:
+            key = (t, cell, f)
+            if key in model.charging_cells_key_set:
+                # Werte abrufen
+                n_wait_value = model.n_wait[key].value
+                n_wait_charge_next_value = model.n_wait_charge_next[key].value
+
+                # Sicherstellen, dass die Werte nicht None sind
+                if n_wait_value is not None:
+                    n_wait_total += n_wait_value
+                if n_wait_charge_next_value is not None:
+                    n_wait_charge_next_total += n_wait_charge_next_value
+
+        # Gesamtwerte zur Liste hinzufügen
+        n_wait_values.append(n_wait_total)
+        n_wait_charge_next_values.append(n_wait_charge_next_total)
+
+    # Plot erstellen
+    plt.figure(figsize=(12, 6))
+    plt.plot(time_steps, n_wait_values, label='n_wait', marker='o')
+    plt.plot(time_steps, n_wait_charge_next_values, label='n_wait_charge_next', marker='x')
+    plt.xlabel('timestep')
+    plt.ylabel('Amount of vehicle')
+    plt.title(f'Waiting vehicle in Cell {cell}')
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+
+    # Verzeichnis für die Speicherung erstellen, falls es nicht existiert
+    output_dir = os.path.join('results', 'Pictures')
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Diagramm speichern
+    output_path = os.path.join(output_dir, f'waiting_vehicles_cell{cell}_{time_of_optimization}.png')
+    plt.savefig(output_path)
+
+    # Optional: Diagramm anzeigen
+    # plt.show()
+
+def plot_waiting_vehicles_cell7(model, time_of_optimization):
+    """
+    Plots n_wait and n_wait_charge_next over time for cell 1.
+
+    Parameters:
+    - model: The Pyomo model containing the optimization results.
+    - time_of_optimization: Timestamp or identifier to include in the file name.
+    """
+    # Zelle, für die geplottet werden soll (Anpassung möglich)
+    cell = 7  # Achte darauf, ob deine Zellen bei 0 oder 1 beginnen
+
+    # Alle Zeitschritte abrufen
+    time_steps = sorted(model.nb_timestep)
+
+    # Listen zum Speichern der Werte
+    n_wait_values = []
+    n_wait_charge_next_values = []
+
+    # Über alle Zeitschritte iterieren
+    for t in time_steps:
+        # Gesamtwerte für den aktuellen Zeitschritt initialisieren
+        n_wait_total = 0
+        n_wait_charge_next_total = 0
+
+        # Über alle Flotten iterieren
+        for f in model.nb_fleet:
+            key = (t, cell, f)
+            if key in model.charging_cells_key_set:
+                # Werte abrufen
+                n_wait_value = model.n_wait[key].value
+                n_wait_charge_next_value = model.n_wait_charge_next[key].value
+
+                # Sicherstellen, dass die Werte nicht None sind
+                if n_wait_value is not None:
+                    n_wait_total += n_wait_value
+                if n_wait_charge_next_value is not None:
+                    n_wait_charge_next_total += n_wait_charge_next_value
+
+        # Gesamtwerte zur Liste hinzufügen
+        n_wait_values.append(n_wait_total)
+        n_wait_charge_next_values.append(n_wait_charge_next_total)
+
+    # Plot erstellen
+    plt.figure(figsize=(12, 6))
+    plt.plot(time_steps, n_wait_values, label='n_wait', marker='o')
+    plt.plot(time_steps, n_wait_charge_next_values, label='n_wait_charge_next', marker='x')
+    plt.xlabel('timestep')
+    plt.ylabel('Amount of vehicle')
+    plt.title(f'Waiting vehicle in Cell {cell}')
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+
+    # Verzeichnis für die Speicherung erstellen, falls es nicht existiert
+    output_dir = os.path.join('results', 'Pictures')
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Diagramm speichern
+    output_path = os.path.join(output_dir, f'waiting_vehicles_cell{cell}_{time_of_optimization}.png')
+    plt.savefig(output_path)
+
+    # Optional: Diagramm anzeigen
+    # plt.show()
+
+def plot_waiting_vehicles_cell11(model, time_of_optimization):
+    """
+    Plots n_wait and n_wait_charge_next over time for cell 1.
+
+    Parameters:
+    - model: The Pyomo model containing the optimization results.
+    - time_of_optimization: Timestamp or identifier to include in the file name.
+    """
+    # Zelle, für die geplottet werden soll (Anpassung möglich)
+    cell = 11  # Achte darauf, ob deine Zellen bei 0 oder 1 beginnen
+
+    # Alle Zeitschritte abrufen
+    time_steps = sorted(model.nb_timestep)
+
+    # Listen zum Speichern der Werte
+    n_wait_values = []
+    n_wait_charge_next_values = []
+
+    # Über alle Zeitschritte iterieren
+    for t in time_steps:
+        # Gesamtwerte für den aktuellen Zeitschritt initialisieren
+        n_wait_total = 0
+        n_wait_charge_next_total = 0
+
+        # Über alle Flotten iterieren
+        for f in model.nb_fleet:
+            key = (t, cell, f)
+            if key in model.charging_cells_key_set:
+                # Werte abrufen
+                n_wait_value = model.n_wait[key].value
+                n_wait_charge_next_value = model.n_wait_charge_next[key].value
+
+                # Sicherstellen, dass die Werte nicht None sind
+                if n_wait_value is not None:
+                    n_wait_total += n_wait_value
+                if n_wait_charge_next_value is not None:
+                    n_wait_charge_next_total += n_wait_charge_next_value
+
+        # Gesamtwerte zur Liste hinzufügen
+        n_wait_values.append(n_wait_total)
+        n_wait_charge_next_values.append(n_wait_charge_next_total)
+
+    # Plot erstellen
+    plt.figure(figsize=(12, 6))
+    plt.plot(time_steps, n_wait_values, label='n_wait', marker='o')
+    plt.plot(time_steps, n_wait_charge_next_values, label='n_wait_charge_next', marker='x')
+    plt.xlabel('timestep')
+    plt.ylabel('Amount of vehicle')
+    plt.title(f'Waiting vehicle in Cell {cell}')
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+
+    # Verzeichnis für die Speicherung erstellen, falls es nicht existiert
+    output_dir = os.path.join('results', 'Pictures')
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Diagramm speichern
+    output_path = os.path.join(output_dir, f'waiting_vehicles_cell{cell}_{time_of_optimization}.png')
+    plt.savefig(output_path)
+
+    # Optional: Diagramm anzeigen
+    # plt.show()
+
+def plot_waiting_vehicles_cell13(model, time_of_optimization):
+    """
+    Plots n_wait and n_wait_charge_next over time for cell 1.
+
+    Parameters:
+    - model: The Pyomo model containing the optimization results.
+    - time_of_optimization: Timestamp or identifier to include in the file name.
+    """
+    # Zelle, für die geplottet werden soll (Anpassung möglich)
+    cell = 13  # Achte darauf, ob deine Zellen bei 0 oder 1 beginnen
+
+    # Alle Zeitschritte abrufen
+    time_steps = sorted(model.nb_timestep)
+
+    # Listen zum Speichern der Werte
+    n_wait_values = []
+    n_wait_charge_next_values = []
+
+    # Über alle Zeitschritte iterieren
+    for t in time_steps:
+        # Gesamtwerte für den aktuellen Zeitschritt initialisieren
+        n_wait_total = 0
+        n_wait_charge_next_total = 0
+
+        # Über alle Flotten iterieren
+        for f in model.nb_fleet:
+            key = (t, cell, f)
+            if key in model.charging_cells_key_set:
+                # Werte abrufen
+                n_wait_value = model.n_wait[key].value
+                n_wait_charge_next_value = model.n_wait_charge_next[key].value
+
+                # Sicherstellen, dass die Werte nicht None sind
+                if n_wait_value is not None:
+                    n_wait_total += n_wait_value
+                if n_wait_charge_next_value is not None:
+                    n_wait_charge_next_total += n_wait_charge_next_value
+
+        # Gesamtwerte zur Liste hinzufügen
+        n_wait_values.append(n_wait_total)
+        n_wait_charge_next_values.append(n_wait_charge_next_total)
+
+    # Plot erstellen
+    plt.figure(figsize=(12, 6))
+    plt.plot(time_steps, n_wait_values, label='n_wait', marker='o')
+    plt.plot(time_steps, n_wait_charge_next_values, label='n_wait_charge_next', marker='x')
+    plt.xlabel('timestep')
+    plt.ylabel('Amount of vehicle')
+    plt.title(f'Waiting vehicle in Cell {cell}')
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+
+    # Verzeichnis für die Speicherung erstellen, falls es nicht existiert
+    output_dir = os.path.join('results', 'Pictures')
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Diagramm speichern
+    output_path = os.path.join(output_dir, f'waiting_vehicles_cell{cell}_{time_of_optimization}.png')
+    plt.savefig(output_path)
+
+    # Optional: Diagramm anzeigen
+    # plt.show()
+
+def plot_waiting_vehicles_cell14(model, time_of_optimization):
+    """
+    Plots n_wait and n_wait_charge_next over time for cell 1.
+
+    Parameters:
+    - model: The Pyomo model containing the optimization results.
+    - time_of_optimization: Timestamp or identifier to include in the file name.
+    """
+    # Zelle, für die geplottet werden soll (Anpassung möglich)
+    cell = 14  # Achte darauf, ob deine Zellen bei 0 oder 1 beginnen
+
+    # Alle Zeitschritte abrufen
+    time_steps = sorted(model.nb_timestep)
+
+    # Listen zum Speichern der Werte
+    n_wait_values = []
+    n_wait_charge_next_values = []
+
+    # Über alle Zeitschritte iterieren
+    for t in time_steps:
+        # Gesamtwerte für den aktuellen Zeitschritt initialisieren
+        n_wait_total = 0
+        n_wait_charge_next_total = 0
+
+        # Über alle Flotten iterieren
+        for f in model.nb_fleet:
+            key = (t, cell, f)
+            if key in model.charging_cells_key_set:
+                # Werte abrufen
+                n_wait_value = model.n_wait[key].value
+                n_wait_charge_next_value = model.n_wait_charge_next[key].value
+
+                # Sicherstellen, dass die Werte nicht None sind
+                if n_wait_value is not None:
+                    n_wait_total += n_wait_value
+                if n_wait_charge_next_value is not None:
+                    n_wait_charge_next_total += n_wait_charge_next_value
+
+        # Gesamtwerte zur Liste hinzufügen
+        n_wait_values.append(n_wait_total)
+        n_wait_charge_next_values.append(n_wait_charge_next_total)
+
+    # Plot erstellen
+    plt.figure(figsize=(12, 6))
+    plt.plot(time_steps, n_wait_values, label='n_wait', marker='o')
+    plt.plot(time_steps, n_wait_charge_next_values, label='n_wait_charge_next', marker='x')
+    plt.xlabel('timestep')
+    plt.ylabel('Amount of vehicle')
+    plt.title(f'Waiting vehicle in Cell {cell}')
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+
+    # Verzeichnis für die Speicherung erstellen, falls es nicht existiert
+    output_dir = os.path.join('results', 'Pictures')
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Diagramm speichern
+    output_path = os.path.join(output_dir, f'waiting_vehicles_cell{cell}_{time_of_optimization}.png')
+    plt.savefig(output_path)
+
+    # Optional: Diagramm anzeigen
+    # plt.show()
