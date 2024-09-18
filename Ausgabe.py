@@ -17,8 +17,8 @@ from pyomo.core.util import quicksum
 from datetime import datetime
 """Python Dateien einfügen"""
 import Ausgabe as ta
-from Funktionen import *
-from FehlendeFunktionen import *
+from functions import *
+from missing_functions import *
 from Ausgabe import *
 from plots import *
 #from _optimization_utils import write_output_files

@@ -1,8 +1,8 @@
 """Python Dateien einfügen"""
-from Funktionen import *
-from FehlendeFunktionen import *
+from functions import *
+from missing_functions import *
 from Ausgabe import *
-from Zielfunktion import *
+from objective_function import *
 from plots import *
 from input_capacity_reduction import *
 from uncontrolled_cars import *
@@ -61,7 +61,7 @@ time_frame = range(0, nb_time_steps + 1) #Zeithorizont Len=121
 #for fleet_filename in ["___flotten_random_test2"]:
 #for fleet_filename in ["___flotten_random_test3"]:                                                     #200.000er Test auf Flotte 1
 #for fleet_filename in ["___flotten_wenige_Fahrzeuge"]:
-for fleet_filename in ["2024_A2_fleets_test2"]:                                                         #A2 Case Study
+for fleet_filename in ["2024_A2_fleets_test3"]:                                                         #A2 Case Study
 
     fleet_df = read_fleets(pd.read_csv("data/" + fleet_filename + ".csv", delimiter=";"))
     print('Die Flotten CSV Datei konnte erfolgreich eingelesen werden')
@@ -151,7 +151,7 @@ for fleet_filename in ["2024_A2_fleets_test2"]:                                 
     """Fehlende Funktionen in Antonias Programm"""
     print("\nFehlende Funktionen ...")
     t4 = time.time()
-    FehlendeFunktionen(charging_model)                                                          #Fehlende Funktionen
+    missing_functions(charging_model)                                                          #Fehlende Funktionen
     print("... took ", str(time.time() - t4), " sec")
 
     print("\nConstraining charging activity at cells ...")
@@ -171,13 +171,15 @@ for fleet_filename in ["2024_A2_fleets_test2"]:                                 
     print("... took ", str(time.time() - t7), " sec")
 
 
+    """Setting the queue to zero as a constraint"""
+    set_n_wait_and_n_wait_charge_next_to_zero(charging_model)
+
 
     print("\nAdding objective function ...")
     t8 = time.time()
-    minimize_waiting_and_charging(charging_model)                                             #Zielfunktion
+    minimize_waiting_and_maximize_unused_capacities(charging_model)                                             #Zielfunktion
+    maximize_unused_capacities(charging_model)
 
-    cost_per_kw = 0.1  # Beispielwert für die Kosten pro kW, anpassbar
-    #minimize_waiting_and_maximize_savings(charging_model, cost_per_kw)
 
     print("... took ", str(time.time() - t8), " sec")
     # _file = open("Math-Equations.txt", "w", encoding="utf-8")
@@ -191,7 +193,7 @@ for fleet_filename in ["2024_A2_fleets_test2"]:                                 
     opt = SolverFactory("gurobi")
 
     # Optional: Zeitlimit setzen (hier auskommentiert, kannst du anpassen)
-    # opt.options["TimeLimit"] = 14400  # Zeitlimit in Sekunden (4 Stunden)
+    opt.options["TimeLimit"] = 300  # Zeitlimit in Sekunden
 
     # Optional: Toleranz für die Optimallösung setzen (hier auskommentiert)
     # opt.options["OptimalityTol"] = 1e-2
@@ -724,6 +726,7 @@ for fleet_filename in ["2024_A2_fleets_test2"]:                                 
 
                     if (t, c, f) in charging_model.charging_cells_key_set:
                         n_wait[t, c, f] = charging_model.n_wait[t, c, f].value
+                        n_wait_charge_next[t, c, f] = charging_model.n_wait_charge_next[t, c, f].value
 
                         E_charge1[t, c, f] = charging_model.E_charge1[t, c, f].value
                         n_charge1[t, c, f] = charging_model.n_charge1[t, c, f].value
@@ -742,30 +745,53 @@ for fleet_filename in ["2024_A2_fleets_test2"]:                                 
                         Q_in_wait[t, c, f] = charging_model.Q_in_wait[t, c, f].value
                         n_in_wait_charge[t, c, f] = charging_model.n_in_wait_charge[t, c, f].value
 
-    print("n_arrived_vehicles", np.sum(n_arrived_vehicles))
-    print("n_incoming_vehicles", np.sum(n_incoming_vehicles))
-
+    print("Departing and Arriving Vehicles:")
+    print("Amount of incoming vehicles:", np.sum(n_incoming_vehicles))
+    print("Amount of arriving vehicles:", np.sum(n_arrived_vehicles))
+    print("")
+    print("Overview of the Energy Consumption and Charged")
     total_cons = np.sum(Q_pass) + np.sum(Q_finished_charging) - np.sum(Q_exit) + (
                 np.sum(Q_in_charge_wait) - np.sum(Q_in_wait) - np.sum(Q_in_charge))
-    print("Total energy consumed", total_cons)
+    print("Total energy consumed:", total_cons)
 
     print(
-        "Total E_charged",
+        "Total energy charged:",
         sum(sum(sum(E_charge1))) + sum(sum(sum(E_charge2))) + sum(sum(sum(E_charge3))),
     )
     print("check", np.sum(Q_arrived_vehicles) - np.sum(Q_incoming_vehicles),
           sum(sum(sum(E_charge1))) + sum(sum(sum(E_charge2))) + sum(sum(sum(E_charge3))) - total_cons)
 
-    print("E_consumed_pass ist:", np.sum(E_consumed_pass))
-    print("n_pass ist:", np.sum(n_pass))
-    print("E_consumed_charge_wait ist:", np.sum(E_consumed_charge_wait))
-    print("n_in_wait_charge ist:", np.sum(n_in_wait_charge))
+    print("")
+    print("Total energy consumped by passing the CS, E_consumed_pass:", np.sum(E_consumed_pass))
+    print("Total amount of vehicles passing the CS, n_pass:", np.sum(n_pass))
+    print("")
+    print("Total energy consumed by entering the CS, E_consumed_charge_wait:", np.sum(E_consumed_charge_wait))
+    print("Total energy consumed by leaving the CS, E_consumed_exit_charge:", np.sum(E_consumed_exit_charge))
+    print("Total amount of vehicle into the CS, n_in_wait_charge:", np.sum(n_in_wait_charge))
+    print("")
+    print("Overview of the waiting vehicles")
+    print("Total amount of waiting vehicles, n_wait:", np.sum(n_wait))
+    print("Total amount of vehicles charging next, n_wait_charge_next:", np.sum(n_wait_charge_next))
+    print("Total amount ot vehicles finishing charging, n_finished_charging:", np.sum(n_finished_charging))
+    print("")
+
     print("Q_in_charge_wait ist:", np.sum(Q_in_charge_wait))
-    print("E_consumed_exit_charge ist:", np.sum(E_consumed_exit_charge))
-    print("n_finished_charging ist:", np.sum(n_finished_charging))
+
+
+
     print("unused ist:", np.sum(unused_capacity))
 
+    # Initialisiere die Summe
+    total_unused_capacity_new = 0
+    # Schleife durch alle Zellen, um die ungenutzten Kapazitäten zu summieren
+    for c in charging_model.nb_cell:
+        if c in charging_model.Unused_capacity_new:
+            unused_capacity_value = charging_model.Unused_capacity_new[c].value
+            if unused_capacity_value is not None:
+                total_unused_capacity_new += unused_capacity_value
 
+    # Ausgabe der Summe in der Konsole
+    print(f"Total: {total_unused_capacity_new}")
 
     # Endzeitpunkt
     end_time = time.time()

@@ -540,11 +540,11 @@ def plot_unused_capacity_new(model, time_of_optimization):
 
     # Filling the space between unused capacity and cell capacity
     for i, c in enumerate(cell_indices):
-        plt.fill_between([c - 0.4, c + 0.4], unused_capacities[i], cell_capacities[i], color='green', alpha=0.7,
+        plt.fill_between([c - 0.39, c + 0.39], unused_capacities[i], cell_capacities[i], color='green', alpha=0.7,
                          label='Used Capacity' if i == 0 else "")
 
     # Adding horizontal lines for cell capacities
-    plt.hlines(cell_capacities, [i - 0.4 for i in cell_indices], [i + 0.4 for i in cell_indices], colors='red',
+    plt.hlines(cell_capacities, [i - 0.39 for i in cell_indices], [i + 0.39 for i in cell_indices], colors='red',
                label='Cell Capacity', linewidth=2)
 
     plt.xlabel('Cell Index')

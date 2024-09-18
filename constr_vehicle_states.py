@@ -667,3 +667,8 @@ def entering_charging_station_Q(model: ConcreteModel, t, c, f):
         == model.Q_in_charge[t, c, f] + model.Q_wait_charge_next[t - 1, c, f]
     )
 
+def n_wait_to_zero(model: ConcreteModel, t, c, f):
+    return model.n_wait[t, c, f] == 0
+
+def n_wait_charge_next_to_zero(model: ConcreteModel, t, c, f):
+    return model.n_wait_charge_next[t, c, f] == 0

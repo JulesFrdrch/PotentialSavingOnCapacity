@@ -88,7 +88,7 @@ def balance_q_cell37(model, t, c, f):
 #"""Traceback (most recent call last):
 #  File "C:\Users\Shadow\PycharmProjects\PotentialSavingOnCapacity\main.py", line 2, in <module>
 #    from Funktionen import *
-#  File "C:\Users\Shadow\PycharmProjects\PotentialSavingOnCapacity\Funktionen.py", line 19, in <module>
+#  File "C:\Users\Shadow\PycharmProjects\PotentialSavingOnCapacity\functions.py", line 19, in <module>
 #    from uncontrolled_cars import *
 #  File "C:\Users\Shadow\PycharmProjects\PotentialSavingOnCapacity\uncontrolled_cars.py", line 86
 #    TypeError: unsupported operand type(s) for +: 'NoneType' and 'NoneType'
@@ -96,3 +96,25 @@ def balance_q_cell37(model, t, c, f):
 #SyntaxError: (unicode error) 'unicodeescape' codec can't decode bytes in position 45-46: truncated \UXXXXXXXX escape
 
 #Process finished with exit code 1"""
+
+def constraint_n_fleet_37_for_cell_12(model, t, c, f):
+    if f == 37 and c == 12:  # Nur für Flotte 37 und Zelle 12
+        return (
+            model.n_in[t, c, f] + model.n_incoming_vehicles[t, c, f]
+            == model.n_in_wait_charge[t, c, f]
+        )
+
+    else:
+        # Keine Bedingung für andere Flotten
+        return Constraint.Skip
+
+def constraint_Q_fleet_37_for_cell_12(model, t, c, f):
+    if f == 37 and c == 12:  # Nur für Flotte 37 und Zelle 12
+        return (
+            model.Q_in[t, c, f] + model.Q_incoming_vehicles[t, c, f]
+            == model.Q_in_wait_charge[t, c, f]
+        )
+
+    else:
+        # Keine Bedingung für andere Flotten
+        return Constraint.Skip

@@ -16,7 +16,7 @@ from pyomo.core.util import quicksum
 from datetime import datetime
 
 
-def FehlendeFunktionen(model: ConcreteModel):
+def missing_functions(model: ConcreteModel):
     """Fehlende Relations bezüglich Q_min und Q_max"""
     model.setting_relation_n_Q_pass_min = Constraint(
         model.key_set, rule=setting_relation_n_Q_pass_min

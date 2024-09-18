@@ -149,52 +149,52 @@ def add_decision_variables_and_create_key_sets(
     model.ladewirkungsgrad = Param(initialize=0.71428)  # Beispiel: 0.8 = 80% Ladewirkungsgrad
 
     """n Varialen mit NonNegativeReals"""
-    model.n_incoming_vehicles = Var(model.key_set, within=NonNegativeReals)
-    model.n_in = Var(model.key_set, within=NonNegativeReals)
-    model.n_pass = Var(model.key_set, within=NonNegativeReals)
-    model.n_exit = Var(model.key_set, within=NonNegativeReals)
-    model.n_out = Var(model.key_set, within=NonNegativeReals)
-    model.n_arrived_vehicles = Var(model.key_set, within=NonNegativeReals)
-    model.n_in_wait_charge = Var(model.charging_cells_key_set, within=NonNegativeReals)
-    model.n_in_wait = Var(model.charging_cells_key_set, within=NonNegativeReals)
-    model.n_wait = Var(model.charging_cells_key_set, within=NonNegativeReals)
-    model.n_wait_charge_next = Var(model.charging_cells_key_set, within=NonNegativeReals)
-    model.n_in_charge = Var(model.charging_cells_key_set, within=NonNegativeReals)
-    model.n_charge1 = Var(model.charging_cells_key_set, within=NonNegativeReals)
-    model.n_charge2 = Var(model.charging_cells_key_set, within=NonNegativeReals)
-    model.n_charge3 = Var(model.charging_cells_key_set, within=NonNegativeReals)
-    model.n_output_charged1 = Var(model.charging_cells_key_set, within=NonNegativeReals)
-    model.n_output_charged2 = Var(model.charging_cells_key_set, within=NonNegativeReals)
-    model.n_output_charged3 = Var(model.charging_cells_key_set, within=NonNegativeReals)
-    model.n_finished_charge1 = Var(model.charging_cells_key_set, within=NonNegativeReals)
-    model.n_finished_charge2 = Var(model.charging_cells_key_set, within=NonNegativeReals)
-    model.n_finished_charge3 = Var(model.charging_cells_key_set, within=NonNegativeReals)
-    model.n_finished_charging = Var(model.charging_cells_key_set, within=NonNegativeReals)
-    model.n_exit_charge = Var(model.charging_cells_key_set, within=NonNegativeReals)
+    #model.n_incoming_vehicles = Var(model.key_set, within=NonNegativeReals)
+    #model.n_in = Var(model.key_set, within=NonNegativeReals)
+    #model.n_pass = Var(model.key_set, within=NonNegativeReals)
+    #model.n_exit = Var(model.key_set, within=NonNegativeReals)
+    #model.n_out = Var(model.key_set, within=NonNegativeReals)
+    #model.n_arrived_vehicles = Var(model.key_set, within=NonNegativeReals)
+    #model.n_in_wait_charge = Var(model.charging_cells_key_set, within=NonNegativeReals)
+    #model.n_in_wait = Var(model.charging_cells_key_set, within=NonNegativeReals)
+    #model.n_wait = Var(model.charging_cells_key_set, within=NonNegativeReals)
+    #model.n_wait_charge_next = Var(model.charging_cells_key_set, within=NonNegativeReals)
+    #model.n_in_charge = Var(model.charging_cells_key_set, within=NonNegativeReals)
+    #model.n_charge1 = Var(model.charging_cells_key_set, within=NonNegativeReals)
+    #model.n_charge2 = Var(model.charging_cells_key_set, within=NonNegativeReals)
+    #model.n_charge3 = Var(model.charging_cells_key_set, within=NonNegativeReals)
+    #model.n_output_charged1 = Var(model.charging_cells_key_set, within=NonNegativeReals)
+    #model.n_output_charged2 = Var(model.charging_cells_key_set, within=NonNegativeReals)
+    #model.n_output_charged3 = Var(model.charging_cells_key_set, within=NonNegativeReals)
+    #model.n_finished_charge1 = Var(model.charging_cells_key_set, within=NonNegativeReals)
+    #model.n_finished_charge2 = Var(model.charging_cells_key_set, within=NonNegativeReals)
+    #model.n_finished_charge3 = Var(model.charging_cells_key_set, within=NonNegativeReals)
+    #model.n_finished_charging = Var(model.charging_cells_key_set, within=NonNegativeReals)
+    #model.n_exit_charge = Var(model.charging_cells_key_set, within=NonNegativeReals)
 
     """n Varialen mit NonNegativeIntegers"""
-    #model.n_incoming_vehicles = Var(model.key_set, within=NonNegativeIntegers)
-    #model.n_in = Var(model.key_set, within=NonNegativeIntegers)
-    #model.n_pass = Var(model.key_set, within=NonNegativeIntegers)
-    #model.n_exit = Var(model.key_set, within=NonNegativeIntegers)
-    #model.n_out = Var(model.key_set, within=NonNegativeIntegers)
-    #model.n_arrived_vehicles = Var(model.key_set, within=NonNegativeIntegers)
-    #model.n_in_wait_charge = Var(model.charging_cells_key_set, within=NonNegativeIntegers)
-    #model.n_in_wait = Var(model.charging_cells_key_set, within=NonNegativeIntegers)
-    #model.n_wait = Var(model.charging_cells_key_set, within=NonNegativeIntegers)
-    #model.n_wait_charge_next = Var(model.charging_cells_key_set, within=NonNegativeIntegers)
-    #model.n_in_charge = Var(model.charging_cells_key_set, within=NonNegativeIntegers)
-    #model.n_charge1 = Var(model.charging_cells_key_set, within=NonNegativeIntegers)
-    #model.n_charge2 = Var(model.charging_cells_key_set, within=NonNegativeIntegers)
-    #model.n_charge3 = Var(model.charging_cells_key_set, within=NonNegativeIntegers)
-    #model.n_output_charged1 = Var(model.charging_cells_key_set, within=NonNegativeIntegers)
-    #model.n_output_charged2 = Var(model.charging_cells_key_set, within=NonNegativeIntegers)
-    #model.n_output_charged3 = Var(model.charging_cells_key_set, within=NonNegativeIntegers)
-    #model.n_finished_charge1 = Var(model.charging_cells_key_set, within=NonNegativeIntegers)
-    #model.n_finished_charge2 = Var(model.charging_cells_key_set, within=NonNegativeIntegers)
-    #model.n_finished_charge3 = Var(model.charging_cells_key_set, within=NonNegativeIntegers)
-    #model.n_finished_charging = Var(model.charging_cells_key_set, within=NonNegativeIntegers)
-    #model.n_exit_charge = Var(model.charging_cells_key_set, within=NonNegativeIntegers)
+    model.n_incoming_vehicles = Var(model.key_set, within=NonNegativeIntegers)
+    model.n_in = Var(model.key_set, within=NonNegativeIntegers)
+    model.n_pass = Var(model.key_set, within=NonNegativeIntegers)
+    model.n_exit = Var(model.key_set, within=NonNegativeIntegers)
+    model.n_out = Var(model.key_set, within=NonNegativeIntegers)
+    model.n_arrived_vehicles = Var(model.key_set, within=NonNegativeIntegers)
+    model.n_in_wait_charge = Var(model.charging_cells_key_set, within=NonNegativeIntegers)
+    model.n_in_wait = Var(model.charging_cells_key_set, within=NonNegativeIntegers)
+    model.n_wait = Var(model.charging_cells_key_set, within=NonNegativeIntegers)
+    model.n_wait_charge_next = Var(model.charging_cells_key_set, within=NonNegativeIntegers)
+    model.n_in_charge = Var(model.charging_cells_key_set, within=NonNegativeIntegers)
+    model.n_charge1 = Var(model.charging_cells_key_set, within=NonNegativeIntegers)
+    model.n_charge2 = Var(model.charging_cells_key_set, within=NonNegativeIntegers)
+    model.n_charge3 = Var(model.charging_cells_key_set, within=NonNegativeIntegers)
+    model.n_output_charged1 = Var(model.charging_cells_key_set, within=NonNegativeIntegers)
+    model.n_output_charged2 = Var(model.charging_cells_key_set, within=NonNegativeIntegers)
+    model.n_output_charged3 = Var(model.charging_cells_key_set, within=NonNegativeIntegers)
+    model.n_finished_charge1 = Var(model.charging_cells_key_set, within=NonNegativeIntegers)
+    model.n_finished_charge2 = Var(model.charging_cells_key_set, within=NonNegativeIntegers)
+    model.n_finished_charge3 = Var(model.charging_cells_key_set, within=NonNegativeIntegers)
+    model.n_finished_charging = Var(model.charging_cells_key_set, within=NonNegativeIntegers)
+    model.n_exit_charge = Var(model.charging_cells_key_set, within=NonNegativeIntegers)
 
     """Q und E Variablen!"""
 
@@ -762,75 +762,43 @@ def constr_vehicle_states(model: ConcreteModel):
 
 
 
-
-
-
-
 """Charging"""
 def restraint_charging_capacity(model: ConcreteModel):
 
     """Mit unused_capacities_NEW"""
-    #model.c_cell_capacity = Constraint(model.t_cs, rule=charging_at_restarea_neu_alte_Wirkungsgrad_regel)
-    model.c_cell_capacity = Constraint(model.t_cs, rule=charging_at_restarea_neu)
+    model.c_cell_capacity = Constraint(model.t_cs, rule=charging_constraint)
+    model.c_cell_capacity = Constraint(model.t_cs, rule=charging_constraint2)   #Wirkungsgrad unten statt oben
     """Ohne unused_capacities_NEW"""
     #model.c_cell_capacity = Constraint(model.t_cs, rule=charging_at_restarea)
     #del model.t_cs
 
 """Uncontrolled / random Cars"""
 def uncontrolled_cars_decision(model: ConcreteModel):
+    """
+    Steuerung der random / uncontrolled cars
+    """
+
     model.balance_n_cell37 = Constraint(model.key_set, rule=balance_n_cell37)
     # model.balance_q_cell37 = Constraint(model.key_set, rule=balance_q_cell37)
 
 """Unused_capacity"""
 def unused_capacities(model: ConcreteModel):
+    """
+    Ermittelt die ungenutzten Kapazitäten anhand der Summe der geladenen Energie und der Zellen Kapazität
+    """
 
     """unused_capacity mit c und t"""
     model.unused_capacity_constraint = Constraint(model.t_cs,rule=unused_capacity_constraint_rule)
+
     """Unused_capacity_new nur mit c"""
     #model.ChargingConstraint = Constraint(model.t_cs, rule=charging_constraint)
 
+"""Setting the waiting queue to zero"""
+def set_n_wait_and_n_wait_charge_next_to_zero(model: ConcreteModel):
+    """
+    Setzt n_wait und n_wait_charge_next für alle Zeitschritte und Zellen auf 0.
+    """
 
-def charging_at_restarea_alt(model: ConcreteModel, t, c):
-    return (
-        quicksum(
-
-                (model.E_charge1[t, c, f0] + model.E_charge2[t, c, f0] + model.E_charge3[t, c, f0]) * model.ladewirkungsgrad
-                for f0 in model.nb_fleet
-                if (t, c, f0) in model.charging_cells_key_set
-
-        )
-        <= model.cell_charging_cap[c] * 0.25
-    )
-
-def charging_at_restarea(model: ConcreteModel, t, c):
-    return (
-        quicksum(
-            (model.E_charge1[t, c, f] + model.E_charge2[t, c, f] + model.E_charge3[t, c, f])
-            for f in model.nb_fleet
-            if (t, c, f) in model.charging_cells_key_set
-        )
-        <= model.cell_charging_cap[c] * model.time_resolution * model.ladewirkungsgrad
-    )
-
-
-
-def charging_at_restarea_neu(model: ConcreteModel, t, c):                                                                   #gleich wie bei unused_capacities.py
-    return (
-            quicksum(
-                (model.E_charge1[t, c, f] + model.E_charge2[t, c, f] + model.E_charge3[
-                    t, c, f]) * model.ladewirkungsgrad
-                for f in model.nb_fleet
-                if (t, c, f) in model.charging_cells_key_set
-            )
-            <= (model.cell_charging_cap[c] - model.Unused_capacity_new[c]) * model.time_resolution
-    )
-
-def charging_at_restarea_neu_alte_Wirkungsgrad_regel(model: ConcreteModel, t, c):
-    return (
-        quicksum(
-            (model.E_charge1[t, c, f] + model.E_charge2[t, c, f] + model.E_charge3[t, c, f])
-            for f in model.nb_fleet
-            if (t, c, f) in model.charging_cells_key_set
-        )
-        <= (model.cell_charging_cap[c] - model.Unused_capacity_new[c]) * model.time_resolution * model.ladewirkungsgrad
-    )
+    # Definiere die Nebenbedingung für alle Zeitschritte und Zellen
+    model.c_n_wait_zero = Constraint(model.charging_cells_key_set, rule=n_wait_to_zero)
+    model.c_n_wait_charge_next_zero = Constraint(model.charging_cells_key_set, rule=n_wait_charge_next_to_zero)

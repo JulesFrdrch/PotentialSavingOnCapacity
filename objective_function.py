@@ -22,15 +22,25 @@ from pyomo.environ import *
 
 
 """Objective Function old"""
-def minimize_waiting_and_charging(model: ConcreteModel):
+def minimize_waiting_and_maximize_unused_capacities(model: ConcreteModel):
     model.objective_function = Objective(
         expr=(
             quicksum(
                     model.n_wait[el] + model.n_wait_charge_next[el]
                     for el in model.charging_cells_key_set
-            )
+            )*3
             - quicksum(model.Unused_capacity_new[c] for c in model.cs_cells)
         ),
         sense=minimize,
+
+    )
+
+def maximize_unused_capacities(model: ConcreteModel):
+    cost_per_kw = 200                         #based on literature: cost per kw of installation for a DC charger
+    model.objective_function = Objective(
+        expr=(
+            quicksum(model.Unused_capacity_new[c] for c in model.cs_cells)*cost_per_kw
+        ),
+        sense=maximize,
 
     )
