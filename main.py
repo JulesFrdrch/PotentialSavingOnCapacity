@@ -37,15 +37,14 @@ SOC_min = 0.1
 SOC_max = 1
 t_min = 0.2
 time_resolution = 0.25  #Zeitauflösung von 15 Minuten
-nb_time_steps = 120     #120 Time Steps = 30 Stunden, 96 für 24 Stunden
+nb_time_steps = 96     #120 Time Steps = 30 Stunden, 96 für 24 Stunden
 
 
 
 """Zelleninformationen einlesen"""
-#cells = pd.read_csv("data/Zellen_input_reduzierung_test.csv")
-#cells = pd.read_csv("data/20220722-232828_cells_input.csv")
-#cells = pd.read_csv("data/2024_A2_cell_input.csv")                                                      #A2 0 bis 13
-cells = pd.read_csv("data/2024_A2_cell_input_empty_start_end.csv")                                          #A2 1 bis 14 und leere erste und letzte Zelle
+#cells = pd.read_csv("data/20220722-232828_cells_input.csv")        #30h
+#cells = pd.read_csv("data/2024_A2_cell_input.csv")                                                       #A2 0 bis 13
+cells = pd.read_csv("data/2024_A2_cell_input_empty_start_end.csv")                                       #A2 1 bis 14 und leere erste und letzte Zelle
 
 print(cells)
 
@@ -57,11 +56,8 @@ time_frame = range(0, nb_time_steps + 1) #Zeithorizont Len=121
 
 """Flotteninformationen einlesen"""
 #for fleet_filename in ["summer_workdayfleet_input_20220719_compressed_probe"]:
-#for fleet_filename in ["___flotten_random_test1"]:                                                      #Flotte 37 Test
-#for fleet_filename in ["___flotten_random_test2"]:
-#for fleet_filename in ["___flotten_random_test3"]:                                                     #200.000er Test auf Flotte 1
-#for fleet_filename in ["___flotten_wenige_Fahrzeuge"]:
-for fleet_filename in ["2024_A2_fleets_test3"]:                                                         #A2 Case Study
+#for fleet_filename in ["___flotten_random_test2"]:     #30h
+for fleet_filename in ["2024_A2_fleets_test3"]:        #24h                                      #A2 Case Study
 
     fleet_df = read_fleets(pd.read_csv("data/" + fleet_filename + ".csv", delimiter=";"))
     print('Die Flotten CSV Datei konnte erfolgreich eingelesen werden')
