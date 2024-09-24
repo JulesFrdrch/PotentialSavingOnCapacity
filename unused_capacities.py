@@ -38,7 +38,7 @@ def charging_constraint(model: ConcreteModel, t, c):
                 for f in model.nb_fleet
                 if (t, c, f) in model.charging_cells_key_set
             )
-            <= (model.cell_charging_cap[c] - model.Unused_capacity_new[c]) * model.time_resolution
+            <= (model.cell_charging_cap[c] - model.Unused_capacity_new[c]) * model.time_resolution                          #<=
     )
 
 def charging_constraint2(model: ConcreteModel, t, c):

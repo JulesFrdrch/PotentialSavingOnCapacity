@@ -118,3 +118,81 @@ def constraint_Q_fleet_37_for_cell_12(model, t, c, f):
     else:
         # Keine Bedingung für andere Flotten
         return Constraint.Skip
+
+
+def charging_decison_random_fleets_SOC35(model: ConcreteModel, t, c, f):
+    if model.Q_in[t, c, f] <= model.n_in[t, c, f] * model.fleet_batt_cap[f] * 0.35:
+        return (
+            model.n_in[t, c, f] == model.n_in_wait_charge[t, c, f]
+        )
+
+    else:
+        # Keine Bedingung für andere Flotten
+        return Constraint.Skip
+
+def fleet_control_rule(model, t, c, f):
+    # Bedingung: Q_in <= n_in * batt_cap * 0.35
+    if model.Q_in[t, c, f] <= model.n_in[t, c, f] * model.fleet_batt_cap[f] * 0.35:
+        # Setze n_in = n_in_wait_charge
+        return model.n_in[t, c, f] == model.n_in_wait_charge[t, c, f]
+    # Wenn die Bedingung nicht zutrifft, keine Veränderung:
+    return Constraint.Skip
+
+M=1e6
+def fleet_control_rule_1(model, t, c, f):
+    """
+    Erzwingt die Bedingung Q_in[t, c, f] <= n_in[t, c, f] * fleet_batt_cap[f] * 0.35, wenn binary_condition == 1.
+    """
+    return model.Q_in[t, c, f] <= model.n_in[t, c, f] * model.fleet_batt_cap[f] * 0.35 + M * (
+                1 - model.binary_condition[t, c, f])
+
+def fleet_control_rule_2(model, t, c, f):
+    """
+    Setzt n_in[t, c, f] gleich n_in_wait_charge[t, c, f], wenn binary_condition == 1.
+    """
+    return model.n_in[t, c, f] == model.n_in_wait_charge[t, c, f] * model.binary_condition[t, c, f]
+
+def fleet_control_rule_3(model, t, c, f):
+    """
+    Erzwingt die Bedingung Q_in[t, c, f] > n_in[t, c, f] * fleet_batt_cap[f] * 0.35, wenn binary_condition == 0.
+    """
+    return model.Q_in[t, c, f] >= model.n_in[t, c, f] * model.fleet_batt_cap[f] * 0.35 - M * model.binary_condition[
+        t, c, f]
+
+
+
+from pyomo.environ import ConcreteModel, Var, Constraint, Binary
+
+def control_random_fleet_with_big_m(model: ConcreteModel, M=1e6, charge_threshold=0.35):
+    """
+    Steuert Fahrzeuge der random_fleet, basierend auf der Bedingung:
+    Wenn Q_in[t, c, f] <= n_in[t, c, f] * fleet_batt_cap[f] * charge_threshold,
+    dann sollen die Fahrzeuge in die Ladewarteschlange (n_in_wait_charge) geschickt werden.
+
+    Nutzt die Big-M-Methode zur Modellierung der Bedingung, da Pyomo keine Variablen in einem if-Statement erlaubt.
+
+    :param model: Das ConcreteModel des Optimierungsproblems.
+    :param M: Ein sehr großer Wert (Big-M) zur Modellierung der Bedingung.
+    :param charge_threshold: Schwellenwert für den Ladezustand (als Anteil der Batterie).
+    """
+
+    # Definiere eine binäre Variable für jeden Zeitschritt, Zelle und Flotten-ID
+    model.binary_condition = Var(model.random_fleet_cs, within=Binary)
+
+    # Regel 1: Wenn Q_in <= n_in * fleet_batt_cap * charge_threshold, dann binary_condition = 1
+    def fleet_control_rule_1(model, t, c, f):
+        return model.Q_in[t, c, f] <= model.n_in[t, c, f] * model.fleet_batt_cap[f] * charge_threshold + M * (1 - model.binary_condition[t, c, f])
+
+    # Regel 2: Wenn binary_condition = 1, dann setze n_in = n_in_wait_charge
+    def fleet_control_rule_2(model, t, c, f):
+        return model.n_in[t, c, f] == model.n_in_wait_charge[t, c, f] * model.binary_condition[t, c, f]
+
+    # Regel 3: Wenn binary_condition = 0, dann muss die Bedingung umgekehrt sein (Q_in > Schwellenwert)
+    def fleet_control_rule_3(model, t, c, f):
+        return model.Q_in[t, c, f] >= model.n_in[t, c, f] * model.fleet_batt_cap[f] * charge_threshold - M * model.binary_condition[t, c, f]
+
+    # Füge die Regeln als Constraints in das Modell ein
+    model.control_rule_1 = Constraint(model.random_fleet_cs, rule=fleet_control_rule_1)
+    model.control_rule_2 = Constraint(model.random_fleet_cs, rule=fleet_control_rule_2)
+    model.control_rule_3 = Constraint(model.random_fleet_cs, rule=fleet_control_rule_3)
+

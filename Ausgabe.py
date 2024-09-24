@@ -616,3 +616,148 @@ def write_output_file_Energy_charged(model, time_of_optimization, filename):
 
     # Aufruf der Funktion zur Erstellung des Plots für ausgewählte Zellen
     plot_energy_charged_for_selected_cells(timesteps, results, inds_of_all_cells, selected_cells, time_of_optimization)
+
+
+def write_fleet_energy_details_to_csv(model: ConcreteModel, fleet_id: int, filename: str):
+    """
+    Erzeugt eine CSV-Datei, die die Energie einer bestimmten Flotte (fleet_id) über alle Zeitschritte und Zellen ausgibt.
+    Erfasst die Werte für Q_in, Q_incoming_vehicles, Q_out und Q_arrived_vehicles.
+    Speichert die Datei im Verzeichnis "results".
+
+    :param model: Das ConcreteModel des Ladeoptimierungsmodells.
+    :param fleet_id: Die ID der Flotte, für die die Energie ausgegeben werden soll.
+    :param filename: Der Name der CSV-Datei, die erzeugt wird (ohne Pfad).
+    """
+    # Sicherstellen, dass das Verzeichnis 'results' existiert
+    results_dir = 'results'
+    if not os.path.exists(results_dir):
+        os.makedirs(results_dir)
+
+    # Erstelle den vollständigen Pfad zur Datei
+    file_path = os.path.join(results_dir, filename)
+
+    # Erstelle und schreibe die CSV-Datei
+    with open(file_path, mode='w', newline='') as file:
+        writer = csv.writer(file)
+        # Schreibe die Header
+        writer.writerow(['Zeitschritt', 'Zelle', 'Q_in', 'Q_incoming_vehicles', 'Q_out', 'Q_arrived_vehicles'])
+
+        # Iteriere über alle Zeitschritte und Zellen für die angegebene Flotte
+        for t in model.nb_timestep:
+            for c in model.nb_cell:
+                # Überprüfen, ob die Flotte f in dieser Zelle und diesem Zeitschritt vorhanden ist
+                if (t, c, fleet_id) in model.key_set:
+                    # Erfasse die Werte von Q_in, Q_incoming_vehicles, Q_out und Q_arrived_vehicles
+                    Q_in = model.Q_in[t, c, fleet_id].value
+                    Q_incoming_vehicles = model.Q_incoming_vehicles[t, c, fleet_id].value
+                    Q_out = model.Q_out[t, c, fleet_id].value
+                    Q_arrived_vehicles = model.Q_arrived_vehicles[t, c, fleet_id].value
+
+                    # Schreibe die Werte in die CSV-Datei
+                    writer.writerow([t, c, Q_in, Q_incoming_vehicles, Q_out, Q_arrived_vehicles])
+
+    print(f"Die detaillierten Energie-Daten der Flotte {fleet_id} wurden in {file_path} gespeichert.")
+
+
+def write_fleet_energy_details_to_csv_separate_rows(model: ConcreteModel, fleet_id: int, filename: str):
+    """
+    Erzeugt eine CSV-Datei, die die Energie einer bestimmten Flotte (fleet_id) über alle Zeitschritte und Zellen ausgibt.
+    Erfasst die Werte für Q_in, Q_incoming_vehicles, Q_out und Q_arrived_vehicles in separaten Zeilen.
+    Speichert die Datei im Verzeichnis "results".
+
+    :param model: Das ConcreteModel des Ladeoptimierungsmodells.
+    :param fleet_id: Die ID der Flotte, für die die Energie ausgegeben werden soll.
+    :param filename: Der Name der CSV-Datei, die erzeugt wird (ohne Pfad).
+    """
+    # Sicherstellen, dass das Verzeichnis 'results' existiert
+    results_dir = 'results'
+    if not os.path.exists(results_dir):
+        os.makedirs(results_dir)
+
+    # Erstelle den vollständigen Pfad zur Datei
+    file_path = os.path.join(results_dir, filename)
+
+    # Erstelle und schreibe die CSV-Datei
+    with open(file_path, mode='w', newline='') as file:
+        writer = csv.writer(file)
+        # Schreibe die Header
+        writer.writerow(['Zeitschritt', 'Zelle', 'Flotte', 'Variable', 'Wert'])
+
+        # Iteriere über alle Zeitschritte und Zellen für die angegebene Flotte
+        for t in model.nb_timestep:
+            for c in model.nb_cell:
+                # Überprüfen, ob die Flotte f in dieser Zelle und diesem Zeitschritt vorhanden ist
+                if (t, c, fleet_id) in model.key_set:
+                    # Erfasse die Werte von Q_in, Q_incoming_vehicles, Q_out und Q_arrived_vehicles
+                    Q_in = model.Q_in[t, c, fleet_id].value
+                    Q_incoming_vehicles = model.Q_incoming_vehicles[t, c, fleet_id].value
+                    Q_out = model.Q_out[t, c, fleet_id].value
+                    Q_arrived_vehicles = model.Q_arrived_vehicles[t, c, fleet_id].value
+
+                    # Schreibe jede Variable in eine eigene Zeile
+                    writer.writerow([t, c, fleet_id, 'Q_in', Q_in])
+                    writer.writerow([t, c, fleet_id, 'Q_incoming_vehicles', Q_incoming_vehicles])
+                    writer.writerow([t, c, fleet_id, 'Q_out', Q_out])
+                    writer.writerow([t, c, fleet_id, 'Q_arrived_vehicles', Q_arrived_vehicles])
+
+    print(f"Die detaillierten Energie-Daten der Flotte {fleet_id} wurden in {file_path} gespeichert.")
+
+
+
+def write_fleet_energy_and_vehicle_details_to_csv(model: ConcreteModel, fleet_id: int, filename: str):
+    """
+    Erzeugt eine CSV-Datei, die die Energie- und Fahrzeuganzahl einer bestimmten Flotte (fleet_id) über alle Zeitschritte und Zellen ausgibt.
+    Alle Werte stehen in einer Zeile: n_incoming_vehicles, Q_incoming_vehicles, n_in, Q_in, n_out, Q_out, n_arrived_vehicles, Q_arrived_vehicles.
+    Speichert die Datei im Verzeichnis "results".
+
+    :param model: Das ConcreteModel des Ladeoptimierungsmodells.
+    :param fleet_id: Die ID der Flotte, für die die Daten ausgegeben werden sollen.
+    :param filename: Der Name der CSV-Datei, die erzeugt wird (ohne Pfad).
+    """
+    # Sicherstellen, dass das Verzeichnis 'results' existiert
+    results_dir = 'results'
+    if not os.path.exists(results_dir):
+        os.makedirs(results_dir)
+
+    # Erstelle den vollständigen Pfad zur Datei
+    file_path = os.path.join(results_dir, filename)
+
+    # Erstelle und schreibe die CSV-Datei
+    with open(file_path, mode='w', newline='') as file:
+        writer = csv.writer(file)
+        # Schreibe die Header
+        writer.writerow([
+            'Zeitschritt', 'Zelle', 'Flotten-id',
+            'n_incoming_vehicles', 'Q_incoming_vehicles',
+            'n_in', 'Q_in',
+            'n_out', 'Q_out',
+            'n_arrived_vehicles', 'Q_arrived_vehicles'
+        ])
+
+        # Iteriere über alle Zeitschritte und Zellen für die angegebene Flotte
+        for t in model.nb_timestep:
+            for c in model.nb_cell:
+                # Überprüfen, ob die Flotte f in dieser Zelle und diesem Zeitschritt vorhanden ist
+                if (t, c, fleet_id) in model.key_set:
+                    # Erfasse die Werte von Q_in, Q_incoming_vehicles, Q_out, Q_arrived_vehicles
+                    Q_in = model.Q_in[t, c, fleet_id].value
+                    Q_incoming_vehicles = model.Q_incoming_vehicles[t, c, fleet_id].value
+                    Q_out = model.Q_out[t, c, fleet_id].value
+                    Q_arrived_vehicles = model.Q_arrived_vehicles[t, c, fleet_id].value
+
+                    # Erfasse die entsprechenden n-Werte
+                    n_in = model.n_in[t, c, fleet_id].value
+                    n_incoming_vehicles = model.n_incoming_vehicles[t, c, fleet_id].value
+                    n_out = model.n_out[t, c, fleet_id].value
+                    n_arrived_vehicles = model.n_arrived_vehicles[t, c, fleet_id].value
+
+                    # Schreibe alle Werte in eine Zeile
+                    writer.writerow([
+                        t, c, fleet_id,
+                        n_incoming_vehicles, Q_incoming_vehicles,
+                        n_in, Q_in,
+                        n_out, Q_out,
+                        n_arrived_vehicles, Q_arrived_vehicles
+                    ])
+
+    print(f"Die detaillierten Energie- und Fahrzeug-Daten der Flotte {fleet_id} wurden in {file_path} gespeichert.")

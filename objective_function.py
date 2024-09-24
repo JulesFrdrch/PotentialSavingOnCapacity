@@ -18,7 +18,15 @@ from datetime import datetime
 from pyomo.environ import *
 
 
+def maximize_unused_capacities(model: ConcreteModel):
+    cost_per_kw = 200                         #based on literature: cost per kw of installation for a DC charger
+    model.objective_function = Objective(
+        expr=(
+            quicksum(model.Unused_capacity_new[c] for c in model.cs_cells)*cost_per_kw
+        ),
+        sense=maximize,
 
+    )
 
 
 """Objective Function old"""
@@ -35,12 +43,16 @@ def minimize_waiting_and_maximize_unused_capacities(model: ConcreteModel):
 
     )
 
-def maximize_unused_capacities(model: ConcreteModel):
-    cost_per_kw = 200                         #based on literature: cost per kw of installation for a DC charger
+
+
+def minimize_waiting(model: ConcreteModel):
     model.objective_function = Objective(
         expr=(
-            quicksum(model.Unused_capacity_new[c] for c in model.cs_cells)*cost_per_kw
+            quicksum(
+                    model.n_wait[el] + model.n_wait_charge_next[el]
+                    for el in model.charging_cells_key_set
+            )
         ),
-        sense=maximize,
+        sense=minimize,
 
     )

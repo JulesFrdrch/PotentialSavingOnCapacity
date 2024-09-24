@@ -2,12 +2,11 @@ import numpy as np
 from pyomo.core import ConcreteModel
 from scipy.stats import norm
 from pyomo.environ import *
+from initialize_fleets import *
+from constr_vehicle_states import *
 import numpy as np
-
-
 from utils import *
 import warnings
-warnings.simplefilter(action='ignore', category=FutureWarning)
 import pandas as pd
 from openpyxl.workbook import Workbook
 import matplotlib.pyplot as plt
@@ -20,6 +19,7 @@ from datetime import datetime
 from pyomo.environ import ConcreteModel, Objective, quicksum, minimize, maximize
 from uncontrolled_cars import *
 from unused_capacities import *
+warnings.simplefilter(action='ignore', category=FutureWarning)
 
 """Read Fleets"""
 def read_fleets(fleet_df):
@@ -293,7 +293,7 @@ def create_set_routing(model):
                 #print("jetzt yield: t ist", t, "kl ist", kl, "ij ist", ij)
 
 """initialize Fleets"""
-from initialize_fleets import *
+
 def initialize_fleets(model, fleet_df):
     model.c_departing = ConstraintList()
     model.c_fleet_sizes = ConstraintList()
@@ -363,7 +363,7 @@ def initialize_fleets(model, fleet_df):
     )
 
 """Zustände definieren"""
-from constr_vehicle_states import *
+
 def constr_vehicle_states(model: ConcreteModel):
     t0 = time.time()
     model.c_rule_in = Constraint(model.key_set, rule=constraint_rule_in)
@@ -767,7 +767,7 @@ def restraint_charging_capacity(model: ConcreteModel):
 
     """Mit unused_capacities_NEW"""
     model.c_cell_capacity = Constraint(model.t_cs, rule=charging_constraint)
-    model.c_cell_capacity = Constraint(model.t_cs, rule=charging_constraint2)   #Wirkungsgrad unten statt oben
+    #model.c_cell_capacity = Constraint(model.t_cs, rule=charging_constraint2)   #Wirkungsgrad unten statt oben
     """Ohne unused_capacities_NEW"""
     #model.c_cell_capacity = Constraint(model.t_cs, rule=charging_at_restarea)
     #del model.t_cs
@@ -777,9 +777,8 @@ def uncontrolled_cars_decision(model: ConcreteModel):
     """
     Steuerung der random / uncontrolled cars
     """
+    model.charging_decision = Constraint(model.random_fleet_cs, rule=charging_decison_random_fleets_SOC35)
 
-    model.balance_n_cell37 = Constraint(model.key_set, rule=balance_n_cell37)
-    # model.balance_q_cell37 = Constraint(model.key_set, rule=balance_q_cell37)
 
 """Unused_capacity"""
 def unused_capacities(model: ConcreteModel):
@@ -802,3 +801,402 @@ def set_n_wait_and_n_wait_charge_next_to_zero(model: ConcreteModel):
     # Definiere die Nebenbedingung für alle Zeitschritte und Zellen
     model.c_n_wait_zero = Constraint(model.charging_cells_key_set, rule=n_wait_to_zero)
     model.c_n_wait_charge_next_zero = Constraint(model.charging_cells_key_set, rule=n_wait_charge_next_to_zero)
+
+"""Zustände definieren"""
+
+def constr_vehicle_states2(model: ConcreteModel):
+    t0 = time.time()
+    model.c_rule_in = Constraint(model.key_set, rule=constraint_rule_in)
+    model.c_rule_balance = Constraint(model.key_set, rule=constraint_balance_constraint)
+
+    print("the list comprehension took", time.time() - t0, "sec")
+
+    model.init_n_finished_charge1 = Constraint(
+        model.cell_and_fleets_CS, rule=init_n_finished_charge1
+    )
+    model.init_Q_finished_charging = Constraint(
+        model.cell_and_fleets_CS, rule=init_Q_finished_charging
+    )
+    model.init_n_finished_charge2 = Constraint(
+        model.cell_and_fleets_CS, rule=init_n_finished_charge2
+    )
+    model.init_n_finished_charge2_t1 = Constraint(
+        model.cell_and_fleets_CS, rule=init_n_finished_charge2_t1
+    )
+    model.init_Q_output_charge2 = Constraint(model.cell_and_fleets_CS, rule=init_Q_output_charge2)
+
+    model.init_Q_input_charge1 = Constraint(model.cell_and_fleets_CS, rule=init_Q_input_charge1)
+    model.init_n_charge2 = Constraint(model.cell_and_fleets_CS, rule=init_n_charge2)
+    model.init_n_charge2_t1 = Constraint(model.cell_and_fleets_CS, rule=init_n_charge2_t1)
+    model.init_Q_output_charge2_t1 = Constraint(
+        model.cell_and_fleets_CS, rule=init_Q_output_charge2_t1
+    )
+    model.init_n_finished_charge3 = Constraint(
+        model.cell_and_fleets_CS, rule=init_n_finished_charge3
+    )
+    model.init_n_finished_charge3_t1 = Constraint(
+        model.cell_and_fleets_CS, rule=init_n_finished_charge3_t1
+    )
+    model.init_n_finished_charge3_t2 = Constraint(
+        model.cell_and_fleets_CS, rule=init_n_finished_charge3_t2
+    )
+    model.init_n_charge3 = Constraint(model.cell_and_fleets_CS, rule=init_n_charge3)
+    model.init_n_charge3_t1 = Constraint(model.cell_and_fleets_CS, rule=init_n_charge3_t1)
+    model.init_Q_output_charge3 = Constraint(model.cell_and_fleets_CS, rule=init_Q_output_charge3)
+    model.init_Q_output_charge3_t1 = Constraint(
+        model.cell_and_fleets_CS, rule=init_Q_output_charge3_t1
+    )
+    model.init_balance_n_to_charge_n_in_charge = Constraint(
+        model.cell_and_fleets_CS, rule=init_balance_n_to_charge_n_in_charge
+    )
+    model.init_balance_n_wait = Constraint(model.cell_and_fleets_CS, rule=init_balance_n_wait)
+    model.init_balance_Q_wait = Constraint(model.cell_and_fleets_CS, rule=init_balance_Q_wait)
+
+
+    # constraining_n_pass_to_zero_at_end = Constraint(rule=constraining_n_pass_to_zero_at_end)
+    print("Initializations finished")
+    # balance constraints for vehicles
+    model.balance_n_incoming = Constraint(model.key_set, rule=balance_n_incoming)
+    # model.balance_n_incoming_NO_CS = Constraint(model.no_charging_cells_key_set, rule=balance_n_incoming_NO_CS)
+    model.balance_Q_incoming = Constraint(model.key_set, rule=balance_Q_incoming)
+    #model.balance_Q_incoming_NO_CS = Constraint(model.no_charging_cells_key_set, rule=balance_Q_incoming_NO_CS)
+    # model.balance_n_passing = Constraint(model.key_set, rule=balance_n_passing)
+    # model.balance_Q_passing = Constraint(model.key_set, rule=balance_Q_passing)
+    model.balance_waiting_and_charging = Constraint(
+        model.charging_cells_key_set, rule=balance_waiting_and_charging
+    )
+    # model.balance_n_to_charge = Constraint(model.charging_cells_key_set, rule=balance_n_to_charge)
+    model.balance_n_finishing = Constraint(model.charging_cells_key_set, rule=balance_n_finishing)
+    model.balance_Q_finishing = Constraint(model.charging_cells_key_set, rule=balance_Q_finishing)
+    # model.balance_n_exiting = Constraint(model.charging_cells_key_set, rule=balance_n_exiting)
+    # model.balance_n_exiting_NO_CS = Constraint(model.no_charging_cells_key_set, rule=balance_n_exiting_NO_CS)
+    # model.balance_Q_exiting = Constraint(model.charging_cells_key_set, rule=balance_Q_exiting)
+    # model.balance_Q_exiting_NO_CS = Constraint(model.no_charging_cells_key_set, rule=balance_Q_exiting_NO_CS)
+    model.balance_Q_out = Constraint(model.key_set, rule=balance_Q_out)
+    model.balance_n_charge_transfer_1 = Constraint(
+        model.charging_cells_key_set, rule=balance_n_charge_transfer_1
+    )
+    model.balance_n_charge_transfer_2 = Constraint(
+        model.charging_cells_key_set, rule=balance_n_charge_transfer_2
+    )
+    model.balance_n_charge_transfer_3 = Constraint(
+        model.charging_cells_key_set, rule=balance_n_charge_transfer_3
+    )
+
+    print("Balances finished")
+    # energy consumption while driving
+    model.energy_consumption_while_passing = Constraint(
+        model.key_set, rule=calc_energy_consumption_while_passing
+    )
+    model.calc_energy_consumption_before_charging1 = Constraint(
+        model.charging_cells_key_set, rule=calc_energy_consumption_before_charging
+    )
+    model.energy_consumption_after_charging = Constraint(
+        model.charging_cells_key_set, rule=calc_energy_consumption_after_charging
+    )
+    model.energy_consumption_before_charging = Constraint(
+        model.charging_cells_key_set, rule=energy_consumption_before_charging
+    )
+    # model.calc_energy_consumption_before_charging = Constraint(
+    #     model.charging_cells_key_set, rule=calc_energy_consumption_before_charging
+    # )
+
+    # model.calc_energy_consumption_after_charging = Constraint(
+    #     model.charging_cells_key_set, rule=calc_energy_consumption_after_charging
+    # )
+
+    # charging activity
+    model.charging_1 = Constraint(model.charging_cells_key_set, rule=charging_1)
+    model.charging_2 = Constraint(model.charging_cells_key_set, rule=charging_2)
+    model.charging_3 = Constraint(model.charging_cells_key_set, rule=charging_3)
+    model.min_charging_1 = Constraint(model.charging_cells_key_set, rule=min_charging_1)
+    model.min_charging_2 = Constraint(model.charging_cells_key_set, rule=min_charging_2)
+    model.min_charging_3 = Constraint(model.charging_cells_key_set, rule=min_charging_3)
+    model.balance_Q_charging_transfer = Constraint(
+        model.charging_cells_key_set, rule=balance_Q_charging_transfer
+    )
+    model.balance_Q_charging_transfer_1 = Constraint(
+        model.charging_cells_key_set, rule=balance_Q_charging_transfer_1
+    )
+    model.balance_Q_charging_transfer_2 = Constraint(
+        model.charging_cells_key_set, rule=balance_Q_charging_transfer_2
+    )
+    print("Energy cons finished")
+    # relation between n and Q (n ... nb of vehicels, Q ... cummulated state of charge)
+    model.setting_relation_n_Q_in_min = Constraint(
+        model.key_set, rule=setting_relation_n_Q_in_min
+    )
+    model.setting_relation_n_Q_in_max = Constraint(
+        model.key_set, rule=setting_relation_n_Q_in_max
+    )
+    # model.setting_relation_n_Q_in_pass_min = Constraint(
+    #     model.key_set, rule=setting_relation_n_Q_in_pass_min
+    # )
+    # model.setting_relation_n_Q_in_pass_max = Constraint(
+    #     model.key_set, rule=setting_relation_n_Q_in_pass_max
+    # )
+    model.setting_relation_n_Q_in_wait_charge_min = Constraint(
+        model.charging_cells_key_set, rule=setting_relation_n_Q_in_wait_charge_min
+    )
+    model.setting_relation_n_Q_in_wait_charge_max = Constraint(
+        model.charging_cells_key_set, rule=setting_relation_n_Q_in_wait_charge_max
+    )
+    model.setting_relation_n_Q_in_wait_min = Constraint(
+        model.charging_cells_key_set, rule=setting_relation_n_Q_in_wait_min
+    )
+    model.setting_relation_n_Q_in_wait_max = Constraint(
+        model.charging_cells_key_set, rule=setting_relation_n_Q_in_wait_max
+    )
+    model.setting_relation_n_Q_wait_min = Constraint(
+        model.charging_cells_key_set, rule=setting_relation_n_Q_wait_min
+    )
+    model.setting_relation_n_Q_wait_max = Constraint(
+        model.charging_cells_key_set, rule=setting_relation_n_Q_wait_max
+    )
+    model.setting_relation_n_Q_in_charge_min = Constraint(
+        model.charging_cells_key_set, rule=setting_relation_n_Q_in_charge_min
+    )
+    model.setting_relation_n_Q_in_charge_max = Constraint(
+        model.charging_cells_key_set, rule=setting_relation_n_Q_in_charge_max
+    )
+    model.setting_relation_n_Q_wait_charge_next_min = Constraint(
+        model.charging_cells_key_set, rule=setting_relation_n_Q_wait_charge_next_min
+    )
+    model.setting_relation_n_Q_wait_charge_next_max = Constraint(
+        model.charging_cells_key_set, rule=setting_relation_n_Q_wait_charge_next_max
+    )
+    model.setting_relation_n_Q_charge_1_min = Constraint(
+        model.charging_cells_key_set, rule=setting_relation_n_Q_charge_1_min
+    )
+    model.setting_relation_n_Q_charge_1_max = Constraint(
+        model.charging_cells_key_set, rule=setting_relation_n_Q_charge_1_max
+    )
+    model.setting_relation_n_Q_charge_2_min = Constraint(
+        model.charging_cells_key_set, rule=setting_relation_n_Q_charge_2_min
+    )
+    model.setting_relation_n_Q_charge_2_max = Constraint(
+        model.charging_cells_key_set, rule=setting_relation_n_Q_charge_2_max
+    )
+    model.setting_relation_n_Q_charge_3_min = Constraint(
+        model.charging_cells_key_set, rule=setting_relation_n_Q_charge_3_min
+    )
+    model.setting_relation_n_Q_charge_3_max = Constraint(
+        model.charging_cells_key_set, rule=setting_relation_n_Q_charge_3_max
+    )
+    model.setting_relation_n_Q_output_charge_1_min = Constraint(
+        model.charging_cells_key_set, rule=setting_relation_n_Q_output_charge_1_min
+    )
+    model.setting_relation_n_Q_output_charge_1_max = Constraint(
+        model.charging_cells_key_set, rule=setting_relation_n_Q_output_charge_1_max
+    )
+    model.setting_relation_n_Q_output_charge_2_min = Constraint(
+        model.charging_cells_key_set, rule=setting_relation_n_Q_output_charge_2_min
+    )
+    model.setting_relation_n_Q_output_charge_2_max = Constraint(
+        model.charging_cells_key_set, rule=setting_relation_n_Q_output_charge_2_max
+    )
+    model.setting_relation_n_Q_output_charge_3_min = Constraint(
+        model.charging_cells_key_set, rule=setting_relation_n_Q_output_charge_3_min
+    )
+    model.setting_relation_n_Q_output_charge_3_max = Constraint(
+        model.charging_cells_key_set, rule=setting_relation_n_Q_output_charge_3_max
+    )
+    model.setting_relation_n_Q_finished_min = Constraint(
+        model.charging_cells_key_set, rule=setting_relation_n_Q_finished_min
+    )
+    model.setting_relation_n_Q_finished_max = Constraint(
+        model.charging_cells_key_set, rule=setting_relation_n_Q_finished_max
+    )
+    model.setting_relation_n_Q_finished_1_min = Constraint(
+        model.charging_cells_key_set, rule=setting_relation_n_Q_finished_1_min
+    )
+    model.setting_relation_n_Q_finished_1_max = Constraint(
+        model.charging_cells_key_set, rule=setting_relation_n_Q_finished_1_max
+    )
+    model.setting_relation_n_Q_finished_2_min = Constraint(
+        model.charging_cells_key_set, rule=setting_relation_n_Q_finished_2_min
+    )
+    model.setting_relation_n_Q_finished_2_max = Constraint(
+        model.charging_cells_key_set, rule=setting_relation_n_Q_finished_2_max
+    )
+    model.setting_relation_n_Q_finished_3_min = Constraint(
+        model.charging_cells_key_set, rule=setting_relation_n_Q_finished_3_min
+    )
+    model.setting_relation_n_Q_finished_3_max = Constraint(
+        model.charging_cells_key_set, rule=setting_relation_n_Q_finished_3_max
+    )
+    model.setting_relation_n_Q_exit_min = Constraint(
+        model.key_set, rule=setting_relation_n_Q_exit_min
+    )
+    model.setting_relation_n_Q_exit_max = Constraint(
+        model.key_set, rule=setting_relation_n_Q_exit_max
+    )
+    model.setting_relation_n_Q_arriving_min = Constraint(
+        model.key_set, rule=setting_relation_n_Q_arriving_min
+    )
+    model.setting_relation_n_Q_arriving_max = Constraint(
+        model.key_set, rule=setting_relation_n_Q_arriving_max
+    )
+    print("Relations finished")
+    # constraints relating to time step
+    model.key_set_without_last_t = [                                                                                            #t (0-117), c (CS), f
+        el for el in model.key_set if el[0] < model.nb_timesteps - 2
+    ]
+
+    model.key_set_without_last_t_CS = [                                                                                         #t (0-117), c (CS), f
+        el for el in model.charging_cells_key_set if el[0] < model.nb_timesteps - 2
+    ]
+
+    model.key_set_without_last_t_NO_CS = [                                                                                      #Löschen, wird nicht verwendet
+        el for el in model.charging_cells_key_set if el[0] < model.nb_timesteps - 2
+    ]
+
+    model.key_set_with_only_last_ts = [                                                                                     #t (119), c, f
+        el for el in model.key_set if el[0] == model.nb_timesteps-1
+    ]
+    model.key_set_with_only_last_ts_CS = [                                                                                  #t (119), c (CS), f
+        el for el in model.charging_cells_key_set if el[0] == model.nb_timesteps-1
+    ]
+
+    model.key_set_with_only_last_two_ts = [                                                                                     #t (118-119), c, f
+        el for el in model.key_set if el[0] >= model.nb_timesteps - 2
+    ]
+
+    model.key_set_with_only_last_two_ts_CS = [                                                                               #t (118-119), c (CS), f
+        el for el in model.charging_cells_key_set if el[0] >= model.nb_timesteps - 2
+    ]
+
+    model.key_set_with_only_last_three_ts = [                                                                               #t (117-119), c, f
+        el for el in model.key_set if el[0] >= model.nb_timesteps - 3
+    ]
+
+    model.key_set_with_only_last_three_ts_CS = [                                                                            #t (117-119), c (CS), f
+        el for el in model.charging_cells_key_set if el[0] >= model.nb_timesteps - 3
+
+    ]
+
+    model.key_set_with_only_last_four_ts = [                                                                                #t (116-119), c, f
+        el for el in model.key_set if el[0] >= model.nb_timesteps - 4
+    ]
+
+    model.key_set_with_only_last_four_ts_CS = [                                                                             #t (116-119), c (CS), f
+        el for el in model.charging_cells_key_set if el[0] >= model.nb_timesteps - 4
+    ]
+
+    model.key_set_with_only_last_five_ts = [                                                                                #t (115-119), c, f
+        el for el in model.key_set if el[0] >= model.nb_timesteps - 5
+    ]
+
+    model.key_set_with_only_last_five_ts_CS = [                                                                          #t (115-119), c (CS), f
+        el for el in model.charging_cells_key_set if el[0] >= model.nb_timesteps - 5
+    ]
+    model.limiting_n_pass = Constraint(model.key_set_with_only_last_two_ts,
+                                                   rule=limiting_n_pass)
+
+    model.limiting_n_finished_charging = Constraint(model.key_set_with_only_last_ts_CS,
+                                                   rule=limiting_n_finished_charging)
+
+    model.limiting_n_incoming_vehicles = Constraint(model.key_set_with_only_last_two_ts,
+                                                    rule=limiting_n_incoming_vehicles)
+
+    model.limiting_n_in= Constraint(model.key_set_with_only_last_two_ts,
+                                                    rule=limiting_n_in)
+
+    model.limiting_n_exit = Constraint(model.key_set_with_only_last_ts,
+                                     rule=limiting_n_exit)
+    model.limiting_n_out = Constraint(model.key_set_with_only_last_ts,
+                                     rule=limiting_n_out)
+    model.limiting_n_in_wait_charge = Constraint(model.key_set_with_only_last_five_ts_CS,
+                                     rule=limiting_n_in_wait_charge)
+    model.limiting_n_wait = Constraint(model.key_set_with_only_last_five_ts_CS,
+                                     rule=limiting_n_wait)
+    model.limiting_n_wait_charge_next = Constraint(model.key_set_with_only_last_five_ts_CS,
+                                     rule=limiting_n_wait_charge_next)
+
+    model.limiting_n_in_charge = Constraint(model.key_set_with_only_last_five_ts_CS,
+                                     rule=limiting_n_in_charge)
+
+    model.limiting_n_charge1 = Constraint(model.key_set_with_only_last_five_ts_CS,
+                                     rule=limiting_n_charge1)
+    model.limiting_n_charge2 = Constraint(model.key_set_with_only_last_four_ts_CS,
+                                     rule=limiting_n_charge2)
+    model.limiting_n_charge3 = Constraint(model.key_set_with_only_last_three_ts_CS,
+                                     rule=limiting_n_charge3)
+    model.limiting_n_output_charged1 = Constraint(model.key_set_with_only_last_four_ts_CS,
+                                     rule=limiting_n_output_charged1)
+    model.limiting_n_output_charged2 = Constraint(model.key_set_with_only_last_three_ts_CS,
+                                     rule=limiting_n_output_charged2)
+    model.limiting_n_output_charged3 = Constraint(model.key_set_with_only_last_two_ts_CS,
+                                     rule=limiting_n_output_charged3)
+    model.limiting_n_finished_charge1 = Constraint(model.key_set_with_only_last_four_ts_CS,
+                                     rule=limiting_n_finished_charge1)
+    model.limiting_n_finished_charge2= Constraint(model.key_set_with_only_last_three_ts_CS,
+                                     rule=limiting_n_finished_charge2)
+    model.limiting_n_finished_charge3= Constraint(model.key_set_with_only_last_two_ts_CS,
+                                     rule=limiting_n_finished_charge3)
+    model.limiting_n_exit_charge= Constraint(model.key_set_with_only_last_ts_CS,
+                                     rule=limiting_n_exit_charge)
+
+
+    model.inserting_time_jump_n_pass_exit = Constraint(
+        model.key_set_without_last_t, rule=inserting_time_jump_n_pass_exit
+    )
+    model.inserting_time_jump_Q_charging_1 = Constraint(
+        model.key_set_without_last_t_CS, rule=inserting_time_jump_Q_charging_1
+    )
+    model.inserting_time_jump_Q_charging_2 = Constraint(
+        model.key_set_without_last_t_CS, rule=inserting_time_jump_Q_charging_2
+    )
+    model.inserting_time_jump_Q_charging_3 = Constraint(
+        model.key_set_without_last_t_CS, rule=inserting_time_jump_Q_charging_3
+    )
+
+    model.inserting_time_jump_n_charging_1 = Constraint(
+        model.key_set_without_last_t_CS, rule=inserting_time_jump_n_charging_1
+    )
+    model.inserting_time_jump_n_charging_2 = Constraint(
+        model.key_set_without_last_t_CS, rule=inserting_time_jump_n_charging_2
+    )
+    model.inserting_time_jump_n_charging_3 = Constraint(
+        model.key_set_without_last_t_CS, rule=inserting_time_jump_n_charging_3
+    )
+
+    model.inserting_time_jump_n_charged_exit = Constraint(
+        model.key_set_without_last_t_CS, rule=inserting_time_jump_n_charged_exit
+    )
+    # model.inserting_time_jump_Q_charged_exit = Constraint(
+    #     model.key_set_without_last_t_CS, rule=inserting_time_jump_Q_charged_exit
+    # )
+    model.inserting_time_jump_Q_passed_exit = Constraint(
+        model.key_set_without_last_t, rule=inserting_time_jump_Q_passed_exit
+    )
+
+    del model.key_set_without_last_t_CS
+    del model.key_set_without_last_t
+    del model.key_set_without_last_t_NO_CS
+
+    print("Time jumps finished")
+    # ISSUE here
+    # backwards time jump (t-1)
+
+    # TODO: this can be also more efficient: !!
+
+    model.key_set_without_first_t_CS = [                                                                                    #ALle C's mit CS ohne Timestep 0
+        el
+        for el in model.charging_cells_key_set
+        if el[0] > model.fleet_depart_times[el[2]]
+    ]
+    #print("key_set_without_first_t_CS ist:", model.key_set_without_first_t_CS)
+    #print(len(model.key_set_without_first_t_CS))
+
+    model.queue_n = Constraint(model.key_set_without_first_t_CS, rule=queue_n)
+    model.queue_Q = Constraint(model.key_set_without_first_t_CS, rule=queue_Q)
+
+    model.entering_charging_station_n = Constraint(
+        model.key_set_without_first_t_CS, rule=entering_charging_station_n
+    )
+    model.entering_charging_station_Q = Constraint(
+        model.key_set_without_first_t_CS, rule=entering_charging_station_Q
+    )
+    del model.key_set_without_first_t_CS
+

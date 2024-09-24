@@ -37,7 +37,7 @@ SOC_min = 0.1
 SOC_max = 1
 t_min = 0.2
 time_resolution = 0.25  #Zeitauflösung von 15 Minuten
-nb_time_steps = 96     #120 Time Steps = 30 Stunden, 96 für 24 Stunden
+nb_time_steps = 120     #120 Time Steps = 30 Stunden, 96 für 24 Stunden
 
 
 
@@ -52,12 +52,13 @@ print(cells)
 nb_cells = len(cells) #Anzahl der Zellen
 
 """Definition Zeithorizont"""
-time_frame = range(0, nb_time_steps + 1) #Zeithorizont Len=121
+time_frame = range(0, nb_time_steps + 1) #Zeithorizont Len=97
 
 """Flotteninformationen einlesen"""
-#for fleet_filename in ["summer_workdayfleet_input_20220719_compressed_probe"]:
-#for fleet_filename in ["___flotten_random_test2"]:     #30h
-for fleet_filename in ["2024_A2_fleets_test3"]:        #24h                                      #A2 Case Study
+#for fleet_filename in ["___flotten_random_test2"]:
+#for fleet_filename in ["2024_24h_A2_fleets"]:     #30h
+#for fleet_filename in ["2024_A2_fleets_test4"]:          #24h                                      #A2 Case Study
+for fleet_filename in ["2024_A2_fleets_500"]:
 
     fleet_df = read_fleets(pd.read_csv("data/" + fleet_filename + ".csv", delimiter=";"))
     print('Die Flotten CSV Datei konnte erfolgreich eingelesen werden')
@@ -66,7 +67,7 @@ for fleet_filename in ["2024_A2_fleets_test3"]:        #24h                     
     fleet_df["fleet_id"] = range(0, len(fleet_df))
     fleet_df = fleet_df.set_index("fleet_id")
     print(fleet_df)
-    #fleet_df = fleet_df[fleet_df.index.isin(range(0, 10))]                                                                   #0, 3 = 3 Einträge (0,1,2)
+    #fleet_df = fleet_df[fleet_df.index.isin(range(0, 50))]                                                                   #0, 3 = 3 Einträge (0,1,2)
     nb_fleets = len(fleet_df)
     print("Anzahl der Time Steps:\t",nb_time_steps,"Dies entspricht:",nb_time_steps*0.25,"Stunde" ,"\nAnzahl der Zellen:\t\t", nb_cells,"\nAnzahl der Flotten:\t\t" ,nb_fleets)
     #print(fleet_df.loc[2]) #Eine Zeile auslesen
@@ -141,13 +142,16 @@ for fleet_filename in ["2024_A2_fleets_test3"]:        #24h                     
     """Zustände definieren"""
     print("\nConstraining vehicles activities and states ...")
     t3 = time.time()
-    constr_vehicle_states(charging_model)                                                       #Zustände definiert wie auf Folie
+    #Variante Code Antonia
+    constr_vehicle_states(charging_model)  # Zustände definiert wie auf Folie
+    #Variante uncontrolled/controlled cars
+
     print("... took ", str(time.time() - t3), " sec")
 
     """Fehlende Funktionen in Antonias Programm"""
     print("\nFehlende Funktionen ...")
     t4 = time.time()
-    missing_functions(charging_model)                                                          #Fehlende Funktionen
+    #missing_functions(charging_model)                                                          #Fehlende Funktionen
     print("... took ", str(time.time() - t4), " sec")
 
     print("\nConstraining charging activity at cells ...")
@@ -159,6 +163,10 @@ for fleet_filename in ["2024_A2_fleets_test3"]:        #24h                     
     print("\nConstraining random fleet cars ...")
     t6 = time.time()
     #uncontrolled_cars_decision(charging_model)
+    #control_random_fleet_vehicles_with_big_m(charging_model)
+    # Füge die Steuerung der random_fleet hinzu
+    control_random_fleet_with_big_m(charging_model, M=1e6, charge_threshold=0.35)
+
     print("... took ", str(time.time() - t6), " sec")
 
     print("\nConstraining unused capacities ...")
@@ -168,13 +176,14 @@ for fleet_filename in ["2024_A2_fleets_test3"]:        #24h                     
 
 
     """Setting the queue to zero as a constraint"""
-    set_n_wait_and_n_wait_charge_next_to_zero(charging_model)
+    #set_n_wait_and_n_wait_charge_next_to_zero(charging_model)
 
 
     print("\nAdding objective function ...")
     t8 = time.time()
-    minimize_waiting_and_maximize_unused_capacities(charging_model)                                             #Zielfunktion
+    #minimize_waiting_and_maximize_unused_capacities(charging_model)                                             #Zielfunktion
     maximize_unused_capacities(charging_model)
+    #minimize_waiting(charging_model)
 
 
     print("... took ", str(time.time() - t8), " sec")
@@ -189,7 +198,7 @@ for fleet_filename in ["2024_A2_fleets_test3"]:        #24h                     
     opt = SolverFactory("gurobi")
 
     # Optional: Zeitlimit setzen (hier auskommentiert, kannst du anpassen)
-    opt.options["TimeLimit"] = 300  # Zeitlimit in Sekunden
+    # opt.options["TimeLimit"] = 300  # Zeitlimit in Sekunden
 
     # Optional: Toleranz für die Optimallösung setzen (hier auskommentiert)
     # opt.options["OptimalityTol"] = 1e-2
@@ -207,12 +216,12 @@ for fleet_filename in ["2024_A2_fleets_test3"]:        #24h                     
     opt.options["Method"] = 2
 
     # Hier setzen wir das relative Gap auf 1% (MIPGap 0.01 = 1%)
-    opt.options["MIPGap"] = 0.01  # Fügt eine Lücke von 1% hinzu
+    opt.options["MIPGap"] = 0.02  # Fügt eine Lücke von 1% hinzu
 
     # Optimierung starten
     opt_success = opt.solve(
         charging_model, report_timing=True, tee=True                                                                        #Lösen des Optimierungsmodells
-    )                                                                                                                       #report_time=True & tee=True aktiieren das Berichtswesen
+    )                                                                                                                       #report_time=True & tee=True aktivieren das Berichtswesen
 
     print(
         colored(
@@ -288,6 +297,17 @@ for fleet_filename in ["2024_A2_fleets_test3"]:        #24h                     
 
 
     """AusgabeDateien"""
+    # Ausgabe der detaillierten Energie-Daten für Flotte 1 in einer CSV-Datei im 'results'-Verzeichnis
+    write_fleet_energy_details_to_csv(charging_model, fleet_id=1, filename='fleet_1_energy_details.csv')
+
+    # Ausgabe der detaillierten Energie-Daten für Flotte 1 in einer CSV-Datei im 'results'-Verzeichnis
+    write_fleet_energy_details_to_csv_separate_rows(charging_model, fleet_id=1,
+                                                    filename='fleet_1_energy_details_separate_rows.csv')
+
+    # Ausgabe der detaillierten Energie- und Fahrzeug-Daten für Flotte 1 in einer CSV-Datei im 'results'-Verzeichnis
+    write_fleet_energy_and_vehicle_details_to_csv(charging_model, fleet_id=1,
+                                                  filename='fleet_1_energy_and_vehicle_details.csv')
+
     write_output_file_charging_stations(charging_model, time_of_optimization, fleet_filename)               #n_in_wait_charge, Queue=wait+wait_charge_next, Summe(n_charge)
                                                                                                             #Summe(E_charge), n_in, n_incoming_vehciles, n_exit, n_arrived, n_pass
     write_output_file_arrived_vehicles(charging_model, time_of_optimization, fleet_filename)                #n_arrived_vehicles
