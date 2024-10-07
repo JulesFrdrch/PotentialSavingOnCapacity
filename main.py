@@ -40,6 +40,13 @@ time_resolution = 0.25  #Zeitauflösung von 15 Minuten
 nb_time_steps = 120     #120 Time Steps = 30 Stunden, 96 für 24 Stunden
 
 
+t_min_controlled = 0.1
+t_min_random = 0.25
+SOC_loading_controlled = 0.5
+SOC_upper_threshold = 0.4
+SOC_lower_threshold = 0.2
+SOC_finished_charging_random = 0.8
+
 
 """Zelleninformationen einlesen"""
 #cells = pd.read_csv("data/20220722-232828_cells_input.csv")        #30h
@@ -57,8 +64,9 @@ time_frame = range(0, nb_time_steps + 1) #Zeithorizont Len=97
 """Flotteninformationen einlesen"""
 #for fleet_filename in ["___flotten_random_test2"]:
 #for fleet_filename in ["2024_24h_A2_fleets"]:     #30h
-#for fleet_filename in ["2024_A2_fleets_test4"]:          #24h                                      #A2 Case Study
-for fleet_filename in ["2024_A2_fleets_500"]:
+#for fleet_filename in ["AT_A2_100(random 0.50, controlled 0.50)"]:
+for fleet_filename in ["AT_A2_100(random 0.00, controlled 1.00)"]:
+#for fleet_filename in ["2024_A2_fleets_100"]:
 
     fleet_df = read_fleets(pd.read_csv("data/" + fleet_filename + ".csv", delimiter=";"))
     print('Die Flotten CSV Datei konnte erfolgreich eingelesen werden')
@@ -107,6 +115,12 @@ for fleet_filename in ["2024_A2_fleets_500"]:
         fleet_df,   #Dieses Dataframe ist relevant für die Funktion und alle aufgerufenen Unterfunktionen
         cells,      #Muss aber auch bei initialize_fleets geändert werden!
         t_min,
+        SOC_upper_threshold,
+        SOC_lower_threshold,
+        SOC_finished_charging_random,
+        SOC_loading_controlled,
+        t_min_random,
+        t_min_controlled,
     )
     print("... took ", str(time.time() - t0), " sec")
 
@@ -142,10 +156,10 @@ for fleet_filename in ["2024_A2_fleets_500"]:
     """Zustände definieren"""
     print("\nConstraining vehicles activities and states ...")
     t3 = time.time()
-    #Variante Code Antonia
-    constr_vehicle_states(charging_model)  # Zustände definiert wie auf Folie
-    #Variante uncontrolled/controlled cars
-
+    """Variante Antonia"""
+    #constr_vehicle_states(charging_model)                                                   # Zustände definiert wie auf Folie
+    """Variante Julius"""
+    constr_vehicle_states_with_uncontrolled_and_controlled_cars(charging_model)
     print("... took ", str(time.time() - t3), " sec")
 
     """Fehlende Funktionen in Antonias Programm"""
@@ -165,7 +179,7 @@ for fleet_filename in ["2024_A2_fleets_500"]:
     #uncontrolled_cars_decision(charging_model)
     #control_random_fleet_vehicles_with_big_m(charging_model)
     # Füge die Steuerung der random_fleet hinzu
-    control_random_fleet_with_big_m(charging_model, M=1e6, charge_threshold=0.35)
+    #control_random_fleet_with_big_m(charging_model, M=1e6, charge_threshold=0.35)
 
     print("... took ", str(time.time() - t6), " sec")
 
@@ -176,7 +190,7 @@ for fleet_filename in ["2024_A2_fleets_500"]:
 
 
     """Setting the queue to zero as a constraint"""
-    #set_n_wait_and_n_wait_charge_next_to_zero(charging_model)
+    set_n_wait_and_n_wait_charge_next_to_zero(charging_model)
 
 
     print("\nAdding objective function ...")
@@ -216,7 +230,7 @@ for fleet_filename in ["2024_A2_fleets_500"]:
     opt.options["Method"] = 2
 
     # Hier setzen wir das relative Gap auf 1% (MIPGap 0.01 = 1%)
-    opt.options["MIPGap"] = 0.02  # Fügt eine Lücke von 1% hinzu
+    opt.options["MIPGap"] = 0.1  # Fügt eine Lücke von 1% hinzu
 
     # Optimierung starten
     opt_success = opt.solve(
@@ -297,16 +311,93 @@ for fleet_filename in ["2024_A2_fleets_500"]:
 
 
     """AusgabeDateien"""
-    # Ausgabe der detaillierten Energie-Daten für Flotte 1 in einer CSV-Datei im 'results'-Verzeichnis
-    write_fleet_energy_details_to_csv(charging_model, fleet_id=1, filename='fleet_1_energy_details.csv')
 
-    # Ausgabe der detaillierten Energie-Daten für Flotte 1 in einer CSV-Datei im 'results'-Verzeichnis
-    write_fleet_energy_details_to_csv_separate_rows(charging_model, fleet_id=1,
-                                                    filename='fleet_1_energy_details_separate_rows.csv')
+    """Controlled fleets 0-9"""
+    write_fleet_energy_and_vehicle_details_to_xlsx_with_soc(charging_model, fleet_id=0,
+                                                            filename="fleet_0_energy_details_with_soc.xlsx")
+    write_fleet_energy_and_vehicle_details_to_xlsx_with_soc(charging_model, fleet_id=1,
+                                                            filename="fleet_1_energy_details_with_soc.xlsx")
+    write_fleet_energy_and_vehicle_details_to_xlsx_with_soc(charging_model, fleet_id=2,
+                                                            filename="fleet_2_energy_details_with_soc.xlsx")
+    write_fleet_energy_and_vehicle_details_to_xlsx_with_soc(charging_model, fleet_id=3,
+                                                            filename="fleet_3_energy_details_with_soc.xlsx")
+    write_fleet_energy_and_vehicle_details_to_xlsx_with_soc(charging_model, fleet_id=4,
+                                                            filename="fleet_4_energy_details_with_soc.xlsx")
+    write_fleet_energy_and_vehicle_details_to_xlsx_with_soc(charging_model, fleet_id=5,
+                                                            filename="fleet_5_energy_details_with_soc.xlsx")
+    write_fleet_energy_and_vehicle_details_to_xlsx_with_soc(charging_model, fleet_id=6,
+                                                            filename="fleet_6_energy_details_with_soc.xlsx")
+    write_fleet_energy_and_vehicle_details_to_xlsx_with_soc(charging_model, fleet_id=7,
+                                                            filename="fleet_7_energy_details_with_soc.xlsx")
+    write_fleet_energy_and_vehicle_details_to_xlsx_with_soc(charging_model, fleet_id=8,
+                                                            filename="fleet_8_energy_details_with_soc.xlsx")
+    write_fleet_energy_and_vehicle_details_to_xlsx_with_soc(charging_model, fleet_id=9,
+                                                            filename="fleet_9_energy_details_with_soc.xlsx")
 
-    # Ausgabe der detaillierten Energie- und Fahrzeug-Daten für Flotte 1 in einer CSV-Datei im 'results'-Verzeichnis
-    write_fleet_energy_and_vehicle_details_to_csv(charging_model, fleet_id=1,
-                                                  filename='fleet_1_energy_and_vehicle_details.csv')
+    write_fleet_energy_and_vehicle_charging_details_to_xlsx(charging_model, fleet_id=0,
+                                                            filename="fleet_0_charging_details.xlsx")
+    write_fleet_energy_and_vehicle_charging_details_to_xlsx(charging_model, fleet_id=1,
+                                                            filename="fleet_1_charging_details.xlsx")
+    write_fleet_energy_and_vehicle_charging_details_to_xlsx(charging_model, fleet_id=2,
+                                                            filename="fleet_2_charging_details.xlsx")
+    write_fleet_energy_and_vehicle_charging_details_to_xlsx(charging_model, fleet_id=3,
+                                                            filename="fleet_3_charging_details.xlsx")
+    write_fleet_energy_and_vehicle_charging_details_to_xlsx(charging_model, fleet_id=4,
+                                                            filename="fleet_4_charging_details.xlsx")
+    write_fleet_energy_and_vehicle_charging_details_to_xlsx(charging_model, fleet_id=5,
+                                                            filename="fleet_5_charging_details.xlsx")
+    write_fleet_energy_and_vehicle_charging_details_to_xlsx(charging_model, fleet_id=6,
+                                                            filename="fleet_6_charging_details.xlsx")
+    write_fleet_energy_and_vehicle_charging_details_to_xlsx(charging_model, fleet_id=7,
+                                                            filename="fleet_7_charging_details.xlsx")
+    write_fleet_energy_and_vehicle_charging_details_to_xlsx(charging_model, fleet_id=8,
+                                                            filename="fleet_8_charging_details.xlsx")
+    write_fleet_energy_and_vehicle_charging_details_to_xlsx(charging_model, fleet_id=9,
+                                                            filename="fleet_9_charging_details.xlsx")
+
+
+    """random fleets 10-19"""
+    write_fleet_energy_and_vehicle_details_to_xlsx_with_soc(charging_model, fleet_id=10,
+                                                            filename="fleet_10_energy_details_with_soc.xlsx")
+    write_fleet_energy_and_vehicle_details_to_xlsx_with_soc(charging_model, fleet_id=11,
+                                                            filename="fleet_11_energy_details_with_soc.xlsx")
+    write_fleet_energy_and_vehicle_details_to_xlsx_with_soc(charging_model, fleet_id=12,
+                                                            filename="fleet_12_energy_details_with_soc.xlsx")
+    write_fleet_energy_and_vehicle_details_to_xlsx_with_soc(charging_model, fleet_id=13,
+                                                            filename="fleet_13_energy_details_with_soc.xlsx")
+    write_fleet_energy_and_vehicle_details_to_xlsx_with_soc(charging_model, fleet_id=14,
+                                                            filename="fleet_14_energy_details_with_soc.xlsx")
+    write_fleet_energy_and_vehicle_details_to_xlsx_with_soc(charging_model, fleet_id=15,
+                                                            filename="fleet_15_energy_details_with_soc.xlsx")
+    write_fleet_energy_and_vehicle_details_to_xlsx_with_soc(charging_model, fleet_id=16,
+                                                            filename="fleet_16_energy_details_with_soc.xlsx")
+    write_fleet_energy_and_vehicle_details_to_xlsx_with_soc(charging_model, fleet_id=17,
+                                                            filename="fleet_17_energy_details_with_soc.xlsx")
+    write_fleet_energy_and_vehicle_details_to_xlsx_with_soc(charging_model, fleet_id=18,
+                                                            filename="fleet_18_energy_details_with_soc.xlsx")
+    write_fleet_energy_and_vehicle_details_to_xlsx_with_soc(charging_model, fleet_id=19,
+                                                            filename="fleet_19_energy_details_with_soc.xlsx")
+
+    write_fleet_energy_and_vehicle_charging_details_to_xlsx(charging_model, fleet_id=10,
+                                                            filename="fleet_10_charging_details.xlsx")
+    write_fleet_energy_and_vehicle_charging_details_to_xlsx(charging_model, fleet_id=11,
+                                                            filename="fleet_11_charging_details.xlsx")
+    write_fleet_energy_and_vehicle_charging_details_to_xlsx(charging_model, fleet_id=12,
+                                                            filename="fleet_12_charging_details.xlsx")
+    write_fleet_energy_and_vehicle_charging_details_to_xlsx(charging_model, fleet_id=13,
+                                                            filename="fleet_13_charging_details.xlsx")
+    write_fleet_energy_and_vehicle_charging_details_to_xlsx(charging_model, fleet_id=14,
+                                                            filename="fleet_14_charging_details.xlsx")
+    write_fleet_energy_and_vehicle_charging_details_to_xlsx(charging_model, fleet_id=15,
+                                                            filename="fleet_15_charging_details.xlsx")
+    write_fleet_energy_and_vehicle_charging_details_to_xlsx(charging_model, fleet_id=16,
+                                                            filename="fleet_16_charging_details.xlsx")
+    write_fleet_energy_and_vehicle_charging_details_to_xlsx(charging_model, fleet_id=17,
+                                                            filename="fleet_17_charging_details.xlsx")
+    write_fleet_energy_and_vehicle_charging_details_to_xlsx(charging_model, fleet_id=18,
+                                                            filename="fleet_18_charging_details.xlsx")
+    write_fleet_energy_and_vehicle_charging_details_to_xlsx(charging_model, fleet_id=19,
+                                                            filename="fleet_19_charging_details.xlsx")
 
     write_output_file_charging_stations(charging_model, time_of_optimization, fleet_filename)               #n_in_wait_charge, Queue=wait+wait_charge_next, Summe(n_charge)
                                                                                                             #Summe(E_charge), n_in, n_incoming_vehciles, n_exit, n_arrived, n_pass

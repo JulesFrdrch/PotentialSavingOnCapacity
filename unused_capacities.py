@@ -34,11 +34,11 @@ def charging_constraint(model: ConcreteModel, t, c):
     return (
             quicksum(
                 (model.E_charge1[t, c, f] + model.E_charge2[t, c, f] + model.E_charge3[
-                    t, c, f]) * model.ladewirkungsgrad
+                    t, c, f])
                 for f in model.nb_fleet
                 if (t, c, f) in model.charging_cells_key_set
             )
-            <= (model.cell_charging_cap[c] - model.Unused_capacity_new[c]) * model.time_resolution                          #<=
+            <= (model.cell_charging_cap[c] - model.Unused_capacity_new[c]) * model.time_resolution * model.ladewirkungsgrad
     )
 
 def charging_constraint2(model: ConcreteModel, t, c):
@@ -61,5 +61,4 @@ def unused_capacity_constraint_rule(model, t, c):
         model.E_charge1[t, c, f] + model.E_charge2[t, c, f] + model.E_charge3[t, c, f] for f in model.nb_fleet if
         (t, c, f) in model.charging_cells_key_set)
     return model.unused_capacity[t, c] == model.cell_charging_cap[c] - total_charge
-
 
