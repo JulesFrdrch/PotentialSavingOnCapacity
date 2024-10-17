@@ -56,3 +56,25 @@ def minimize_waiting(model: ConcreteModel):
         sense=minimize,
 
     )
+
+
+def multi_objective_function(model: ConcreteModel, alpha=2, beta=80):
+    cost_per_kw = 200  # Kosten pro kW ungenutzter Kapazität
+
+
+    # Maximierung der ungenutzten Kapazitäten (Zielfunktion 1)
+    unused_capacity_term = quicksum(model.Unused_capacity_new[c] for c in model.cs_cells) * cost_per_kw
+
+    # Minimierung der Warteschlangen (Zielfunktion 2)
+    waiting_term = quicksum(
+                    model.n_wait[el] + model.n_wait_charge_next[el]
+                    for el in model.charging_cells_key_set
+    )
+
+    # Multi-Objective Funktion: Gewichtete Summe der beiden Ziele
+    model.objective_function = Objective(
+        expr=(
+                alpha * unused_capacity_term - beta * waiting_term
+        ),
+        sense=maximize,  # Da wir das erste Ziel maximieren und das zweite minimieren wollen
+    )

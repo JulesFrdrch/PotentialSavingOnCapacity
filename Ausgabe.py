@@ -620,6 +620,371 @@ def write_output_file_Energy_charged(model, time_of_optimization, filename):
     plot_energy_charged_for_selected_cells(timesteps, results, inds_of_all_cells, selected_cells, time_of_optimization)
 
 
+
+
+
+def write_fleet_energy_and_vehicle_charging_details_to_xlsx(model: ConcreteModel, fleet_id: int, filename: str):
+    """
+    Erzeugt eine XLSX-Datei, die die Energie- und Fahrzeuganzahl einer bestimmten Flotte (fleet_id) über alle Zeitschritte und Zellen mit Ladestationen (charging_cells_key_set) ausgibt.
+    Zusätzlich wird der State of Charge (SOC) für in_wait_charge, wait und in_charge vehicles berechnet und ausgegeben.
+    Alle Werte stehen in einer Zeile.
+    Speichert die Datei im Verzeichnis "results".
+
+    :param model: Das ConcreteModel des Ladeoptimierungsmodells.
+    :param fleet_id: Die ID der Flotte, für die die Daten ausgegeben werden sollen.
+    :param filename: Der Name der XLSX-Datei, die erzeugt wird (ohne Pfad).
+    """
+    # Sicherstellen, dass das Verzeichnis 'results' existiert
+    results_dir = 'results'
+    if not os.path.exists(results_dir):
+        os.makedirs(results_dir)
+
+    # Erstelle den vollständigen Pfad zur Datei
+    file_path = os.path.join(results_dir, filename)
+
+    # Erstelle das Excel-Workbook und aktiviere das Arbeitsblatt
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.title = f"Fleet_{fleet_id}_Charging_Details"
+
+    # Schreibe die Header
+    headers = [
+        'Zeitschritt', 'Zelle', 'Flotten-id',
+        'n_in_wait_charge', 'Q_in_charge_wait', 'SOC_in_wait_charge',
+        'n_wait', 'Q_wait', 'SOC_wait',
+        'n_in_charge', 'Q_in_charge', 'SOC_in_charge',
+        'n_in_wait', 'Q_in_wait', 'SOC_in_wait',
+        'n_finished_charging', 'Q_finished_charging', 'SOC_finished_charging'
+    ]
+    sheet.append(headers)
+
+    # Iteriere über alle Zeitschritte und Zellen mit Ladestationen für die angegebene Flotte
+    for t, c, f in model.charging_cells_key_set:
+        if f == fleet_id:
+            # Erfasse die Werte von Q_in_charge_wait, Q_wait, Q_in_charge, Q_in_wait
+            Q_in_charge_wait = model.Q_in_charge_wait[t, c, fleet_id].value
+            Q_wait = model.Q_wait[t, c, fleet_id].value
+            Q_in_charge = model.Q_in_charge[t, c, fleet_id].value
+            Q_in_wait = model.Q_in_wait[t, c, fleet_id].value
+            Q_finished_charging = model.Q_finished_charging[t, c, fleet_id].value
+
+            # Erfasse die entsprechenden n-Werte
+            n_in_wait_charge = model.n_in_wait_charge[t, c, fleet_id].value
+            n_wait = model.n_wait[t, c, fleet_id].value
+            n_in_charge = model.n_in_charge[t, c, fleet_id].value
+            n_in_wait = model.n_in_wait[t, c, fleet_id].value
+            n_finished_charging = model.n_finished_charging[t, c, fleet_id].value
+
+            # Berechne SOC-Werte, wenn n-Werte > 0 sind, um Division durch 0 zu vermeiden
+            SOC_in_wait_charge = Q_in_charge_wait / n_in_wait_charge if n_in_wait_charge > 0 else 0
+            SOC_wait = Q_wait / n_wait if n_wait > 0 else 0
+            SOC_in_charge = Q_in_charge / n_in_charge if n_in_charge > 0 else 0
+            SOC_in_wait = Q_in_wait / n_in_wait if n_in_wait > 0 else 0
+            SOC_finished_charging = Q_finished_charging / n_finished_charging if n_finished_charging > 0 else 0
+
+            # Schreibe alle Werte in eine Zeile
+            sheet.append([
+                t, c, fleet_id,
+                n_in_wait_charge, Q_in_charge_wait, SOC_in_wait_charge,
+                n_wait, Q_wait, SOC_wait,
+                n_in_charge, Q_in_charge, SOC_in_charge,
+                n_in_wait, Q_in_wait, SOC_in_wait,
+                n_finished_charging, Q_finished_charging, SOC_finished_charging
+            ])
+
+    # Speichere das Workbook als XLSX-Datei
+    workbook.save(file_path)
+
+    #print(f"Die detaillierten Lade-Daten der Flotte {fleet_id} wurden in {file_path} gespeichert.")
+
+
+def write_combined_fleet_0_to_9_energy_and_vehicle_charging_details_to_xlsx(model: ConcreteModel, filename: str):
+    """
+    Erzeugt eine XLSX-Datei, die die kombinierten Energie- und Fahrzeuganzahlen der Flotten 0 bis 9 über alle Zeitschritte und Zellen mit Ladestationen (charging_cells_key_set) ausgibt.
+    Zusätzlich wird der State of Charge (SOC) für in_wait_charge, wait, in_charge und finished_charging vehicles berechnet und ausgegeben.
+    Alle Werte werden summiert und stehen in einer Zeile.
+    Speichert die Datei im Verzeichnis "results".
+
+    :param model: Das ConcreteModel des Ladeoptimierungsmodells.
+    :param filename: Der Name der XLSX-Datei, die erzeugt wird (ohne Pfad).
+    """
+    # Sicherstellen, dass das Verzeichnis 'results' existiert
+    results_dir = 'results'
+    if not os.path.exists(results_dir):
+        os.makedirs(results_dir)
+
+    # Erstelle den vollständigen Pfad zur Datei
+    file_path = os.path.join(results_dir, filename)
+
+    # Erstelle das Excel-Workbook und aktiviere das Arbeitsblatt
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.title = "Fleet_0_to_9_Charging"
+
+    # Schreibe die Header
+    headers = [
+        'Zeitschritt', 'Zelle',
+        'n_in_wait_charge', 'Q_in_charge_wait', 'SOC_in_wait_charge',
+        'n_wait', 'Q_wait', 'SOC_wait',
+        'n_in_charge', 'Q_in_charge', 'SOC_in_charge',
+        'n_in_wait', 'Q_in_wait', 'SOC_in_wait',
+        'n_finished_charging', 'Q_finished_charging', 'SOC_finished_charging'
+    ]
+    sheet.append(headers)
+
+    # Iteriere über alle Zeitschritte und Zellen mit Ladestationen
+    for t in model.nb_timestep:
+        for c in model.nb_cell:
+            # Initialisiere die Summen für die Flotten 0 bis 9
+            total_n_in_wait_charge = total_Q_in_charge_wait = total_n_wait = total_Q_wait = 0
+            total_n_in_charge = total_Q_in_charge = total_n_in_wait = total_Q_in_wait = 0
+            total_n_finished_charging = total_Q_finished_charging = 0
+
+            # Iteriere über die Flotten 0 bis 9 und summiere die Werte
+            for fleet_id in range(0, 10):
+                if (t, c, fleet_id) in model.charging_cells_key_set:
+                    # Erfasse die Werte für diese Flotte
+                    Q_in_charge_wait = model.Q_in_charge_wait[t, c, fleet_id].value
+                    Q_wait = model.Q_wait[t, c, fleet_id].value
+                    Q_in_charge = model.Q_in_charge[t, c, fleet_id].value
+                    Q_in_wait = model.Q_in_wait[t, c, fleet_id].value
+                    Q_finished_charging = model.Q_finished_charging[t, c, fleet_id].value
+
+                    n_in_wait_charge = model.n_in_wait_charge[t, c, fleet_id].value
+                    n_wait = model.n_wait[t, c, fleet_id].value
+                    n_in_charge = model.n_in_charge[t, c, fleet_id].value
+                    n_in_wait = model.n_in_wait[t, c, fleet_id].value
+                    n_finished_charging = model.n_finished_charging[t, c, fleet_id].value
+
+                    # Addiere die Werte zur Gesamtsumme
+                    total_n_in_wait_charge += n_in_wait_charge
+                    total_Q_in_charge_wait += Q_in_charge_wait
+                    total_n_wait += n_wait
+                    total_Q_wait += Q_wait
+                    total_n_in_charge += n_in_charge
+                    total_Q_in_charge += Q_in_charge
+                    total_n_in_wait += n_in_wait
+                    total_Q_in_wait += Q_in_wait
+                    total_n_finished_charging += n_finished_charging
+                    total_Q_finished_charging += Q_finished_charging
+
+            # Berechne die SOC-Werte, wenn n-Werte > 0 sind, um Division durch 0 zu vermeiden
+            SOC_in_wait_charge = total_Q_in_charge_wait / total_n_in_wait_charge if total_n_in_wait_charge > 0 else 0
+            SOC_wait = total_Q_wait / total_n_wait if total_n_wait > 0 else 0
+            SOC_in_charge = total_Q_in_charge / total_n_in_charge if total_n_in_charge > 0 else 0
+            SOC_in_wait = total_Q_in_wait / total_n_in_wait if total_n_in_wait > 0 else 0
+            SOC_finished_charging = total_Q_finished_charging / total_n_finished_charging if total_n_finished_charging > 0 else 0
+
+            # Schreibe die summierten Werte in eine Zeile
+            sheet.append([
+                t, c,
+                total_n_in_wait_charge, total_Q_in_charge_wait, SOC_in_wait_charge,
+                total_n_wait, total_Q_wait, SOC_wait,
+                total_n_in_charge, total_Q_in_charge, SOC_in_charge,
+                total_n_in_wait, total_Q_in_wait, SOC_in_wait,
+                total_n_finished_charging, total_Q_finished_charging, SOC_finished_charging
+            ])
+
+    # Speichere das Workbook als XLSX-Datei
+    workbook.save(file_path)
+
+    print(f"Die kombinierten Lade-Daten der Flotten 0 bis 9 wurden in {file_path} gespeichert.")
+
+
+
+
+def write_combined_fleet_10_to_19_energy_and_vehicle_charging_details_to_xlsx(model: ConcreteModel, filename: str):
+    """
+    Erzeugt eine XLSX-Datei, die die kombinierten Energie- und Fahrzeuganzahlen der Flotten 10 bis 19 über alle Zeitschritte und Zellen mit Ladestationen (charging_cells_key_set) ausgibt.
+    Zusätzlich wird der State of Charge (SOC) für in_wait_charge, wait, in_charge und finished_charging vehicles berechnet und ausgegeben.
+    Alle Werte werden summiert und stehen in einer Zeile.
+    Speichert die Datei im Verzeichnis "results".
+
+    :param model: Das ConcreteModel des Ladeoptimierungsmodells.
+    :param filename: Der Name der XLSX-Datei, die erzeugt wird (ohne Pfad).
+    """
+    # Sicherstellen, dass das Verzeichnis 'results' existiert
+    results_dir = 'results'
+    if not os.path.exists(results_dir):
+        os.makedirs(results_dir)
+
+    # Erstelle den vollständigen Pfad zur Datei
+    file_path = os.path.join(results_dir, filename)
+
+    # Erstelle das Excel-Workbook und aktiviere das Arbeitsblatt
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.title = "Fleet_10_to_19_Charging"
+
+    # Schreibe die Header
+    headers = [
+        'Zeitschritt', 'Zelle',
+        'n_in_wait_charge', 'Q_in_charge_wait', 'SOC_in_wait_charge',
+        'n_wait', 'Q_wait', 'SOC_wait',
+        'n_in_charge', 'Q_in_charge', 'SOC_in_charge',
+        'n_in_wait', 'Q_in_wait', 'SOC_in_wait',
+        'n_finished_charging', 'Q_finished_charging', 'SOC_finished_charging'
+    ]
+    sheet.append(headers)
+
+    # Iteriere über alle Zeitschritte und Zellen mit Ladestationen
+    for t in model.nb_timestep:
+        for c in model.nb_cell:
+            # Initialisiere die Summen für die Flotten 10 bis 19
+            total_n_in_wait_charge = total_Q_in_charge_wait = total_n_wait = total_Q_wait = 0
+            total_n_in_charge = total_Q_in_charge = total_n_in_wait = total_Q_in_wait = 0
+            total_n_finished_charging = total_Q_finished_charging = 0
+
+            # Iteriere über die Flotten 10 bis 19 und summiere die Werte
+            for fleet_id in range(10, 20):
+                if (t, c, fleet_id) in model.charging_cells_key_set:
+                    # Erfasse die Werte für diese Flotte
+                    Q_in_charge_wait = model.Q_in_charge_wait[t, c, fleet_id].value
+                    Q_wait = model.Q_wait[t, c, fleet_id].value
+                    Q_in_charge = model.Q_in_charge[t, c, fleet_id].value
+                    Q_in_wait = model.Q_in_wait[t, c, fleet_id].value
+                    Q_finished_charging = model.Q_finished_charging[t, c, fleet_id].value
+
+                    n_in_wait_charge = model.n_in_wait_charge[t, c, fleet_id].value
+                    n_wait = model.n_wait[t, c, fleet_id].value
+                    n_in_charge = model.n_in_charge[t, c, fleet_id].value
+                    n_in_wait = model.n_in_wait[t, c, fleet_id].value
+                    n_finished_charging = model.n_finished_charging[t, c, fleet_id].value
+
+                    # Addiere die Werte zur Gesamtsumme
+                    total_n_in_wait_charge += n_in_wait_charge
+                    total_Q_in_charge_wait += Q_in_charge_wait
+                    total_n_wait += n_wait
+                    total_Q_wait += Q_wait
+                    total_n_in_charge += n_in_charge
+                    total_Q_in_charge += Q_in_charge
+                    total_n_in_wait += n_in_wait
+                    total_Q_in_wait += Q_in_wait
+                    total_n_finished_charging += n_finished_charging
+                    total_Q_finished_charging += Q_finished_charging
+
+            # Berechne die SOC-Werte, wenn n-Werte > 0 sind, um Division durch 0 zu vermeiden
+            SOC_in_wait_charge = total_Q_in_charge_wait / total_n_in_wait_charge if total_n_in_wait_charge > 0 else 0
+            SOC_wait = total_Q_wait / total_n_wait if total_n_wait > 0 else 0
+            SOC_in_charge = total_Q_in_charge / total_n_in_charge if total_n_in_charge > 0 else 0
+            SOC_in_wait = total_Q_in_wait / total_n_in_wait if total_n_in_wait > 0 else 0
+            SOC_finished_charging = total_Q_finished_charging / total_n_finished_charging if total_n_finished_charging > 0 else 0
+
+            # Schreibe die summierten Werte in eine Zeile
+            sheet.append([
+                t, c,
+                total_n_in_wait_charge, total_Q_in_charge_wait, SOC_in_wait_charge,
+                total_n_wait, total_Q_wait, SOC_wait,
+                total_n_in_charge, total_Q_in_charge, SOC_in_charge,
+                total_n_in_wait, total_Q_in_wait, SOC_in_wait,
+                total_n_finished_charging, total_Q_finished_charging, SOC_finished_charging
+            ])
+
+    # Speichere das Workbook als XLSX-Datei
+    workbook.save(file_path)
+
+    print(f"Die kombinierten Lade-Daten der Flotten 10 bis 19 wurden in {file_path} gespeichert.")
+
+def calculate_and_print_energy_split_by_fleet(model: ConcreteModel):
+    """
+    Berechnet die Gesamtenergie, die von zufälligen und kontrollierten Fahrzeugen geladen wurde, basierend auf E_charge1, E_charge2 und E_charge3.
+    Gibt die Ergebnisse in der Konsole aus.
+
+    :param model: Das ConcreteModel des Ladeoptimierungsmodells.
+    """
+    total_energy_random = 0
+    total_energy_controlled = 0
+
+    controlled_fleet_ids = range(0, 10)
+    random_fleet_ids = range(10, 20)
+
+    # Iteriere über die Indizes der Variablen für die Ladeenergie (E_charge1, E_charge2, E_charge3)
+    for t in model.nb_timestep:
+        for c in model.nb_cell:
+            for fleet_id in random_fleet_ids:
+                if (t, c, fleet_id) in model.charging_cells_key_set:
+                    total_energy_random += (
+                        model.E_charge1[t, c, fleet_id].value
+                        + model.E_charge2[t, c, fleet_id].value
+                        + model.E_charge3[t, c, fleet_id].value
+                    )
+
+            for fleet_id in controlled_fleet_ids:
+                if (t, c, fleet_id) in model.charging_cells_key_set:
+                    total_energy_controlled += (
+                        model.E_charge1[t, c, fleet_id].value
+                        + model.E_charge2[t, c, fleet_id].value
+                        + model.E_charge3[t, c, fleet_id].value
+                    )
+
+    # Ausgabe der Ergebnisse in der Konsole
+    print(f"Total energy charged (random_fleet): {total_energy_random:.5f} kWh")
+    print(f"Total energy charged (controlled_fleet): {total_energy_controlled:.5f} kWh")
+    print(f"cross check of total energy charged: {total_energy_random + total_energy_controlled:.5f} kWh")
+
+def calculate_and_print_vehicles_waiting_to_charge_by_fleet(model: ConcreteModel):
+    """
+    Berechnet die Gesamtanzahl der Fahrzeuge, die bei zufälligen und kontrollierten Flotten auf das Laden warten,
+    basierend auf der Variable n_in_wait_charge.
+    Gibt die Ergebnisse in der Konsole aus.
+
+    :param model: Das ConcreteModel des Ladeoptimierungsmodells.
+    """
+    total_vehicles_waiting_random = 0
+    total_vehicles_waiting_controlled = 0
+
+    controlled_fleet_ids = range(0, 10)
+    random_fleet_ids = range(10, 20)
+
+    # Iteriere über die Indizes der Variablen für Fahrzeuge, die auf das Laden warten (n_in_wait_charge)
+    for t in model.nb_timestep:
+        for c in model.nb_cell:
+            for fleet_id in random_fleet_ids:
+                if (t, c, fleet_id) in model.charging_cells_key_set:
+                    total_vehicles_waiting_random += model.n_in_wait_charge[t, c, fleet_id].value
+
+            for fleet_id in controlled_fleet_ids:
+                if (t, c, fleet_id) in model.charging_cells_key_set:
+                    total_vehicles_waiting_controlled += model.n_in_wait_charge[t, c, fleet_id].value
+
+    # Ausgabe der Ergebnisse in der Konsole
+    print(f"Total vehicles to charge (random_fleet): {total_vehicles_waiting_random:.5f}")
+    print(f"Total vehicles to charge (controlled_fleet): {total_vehicles_waiting_controlled:.5f}")
+    print(f"Cross-check of total vehicles into the CS: {total_vehicles_waiting_random + total_vehicles_waiting_controlled:.5f}")
+
+def calculate_and_print_vehicles_waiting_to_charge_by_fleet_new(model: ConcreteModel):
+    """
+    Berechnet die Gesamtanzahl der Fahrzeuge, die bei zufälligen und kontrollierten Flotten auf das Laden warten,
+    basierend auf der Variable n_in_wait_charge.
+    Gibt die Ergebnisse in der Konsole aus, einschließlich der Anzahl pro Flotte (0 bis 19).
+
+    :param model: Das ConcreteModel des Ladeoptimierungsmodells.
+    """
+    # Dictionaries, um die Anzahl wartender Fahrzeuge für jede Flotte zu speichern
+    fleet_vehicles_waiting = {fleet_id: 0 for fleet_id in range(20)}
+
+    # Iteriere über die Indizes der Variablen für Fahrzeuge, die auf das Laden warten (n_in_wait_charge)
+    for t in model.nb_timestep:
+        for c in model.nb_cell:
+            for fleet_id in range(20):
+                if (t, c, fleet_id) in model.charging_cells_key_set:
+                    fleet_vehicles_waiting[fleet_id] += model.n_in_wait_charge[t, c, fleet_id].value
+
+    # Berechne die Gesamtzahl der wartenden Fahrzeuge für random und controlled fleets
+    total_vehicles_waiting_random = sum(fleet_vehicles_waiting[fleet_id] for fleet_id in range(10, 20))
+    total_vehicles_waiting_controlled = sum(fleet_vehicles_waiting[fleet_id] for fleet_id in range(0, 10))
+
+    # Ausgabe der Gesamtanzahlen
+    print(f"Total vehicles to charge (random_fleet): {total_vehicles_waiting_random:.5f}")
+    print(f"Total vehicles to charge (controlled_fleet): {total_vehicles_waiting_controlled:.5f}")
+    print(f"Cross-check of total vehicles into the CS: {total_vehicles_waiting_random + total_vehicles_waiting_controlled:.5f}")
+
+    # Ausgabe der Anzahl wartender Fahrzeuge pro Flotte
+    for fleet_id in range(20):
+        print(f"Fleet {fleet_id} has {fleet_vehicles_waiting[fleet_id]:.5f} vehicles waiting to charge.")
+
+
+
 def write_fleet_energy_and_vehicle_details_to_xlsx_with_soc(model: ConcreteModel, fleet_id: int, filename: str):
     """
     Erzeugt eine XLSX-Datei, die die Energie- und Fahrzeuganzahl einer bestimmten Flotte (fleet_id) über alle Zeitschritte und Zellen ausgibt.
@@ -689,79 +1054,141 @@ def write_fleet_energy_and_vehicle_details_to_xlsx_with_soc(model: ConcreteModel
     # Speichere das Workbook als XLSX-Datei
     workbook.save(file_path)
 
-    print(f"Die detaillierten Energie- und Fahrzeug-Daten der Flotte {fleet_id} wurden in {file_path} gespeichert.")
+    #print(f"Die detaillierten Energie- und Fahrzeug-Daten der Flotte {fleet_id} wurden in {file_path} gespeichert.")
 
 
-def write_fleet_energy_and_vehicle_charging_details_to_xlsx(model: ConcreteModel, fleet_id: int, filename: str):
+def write_combined_fleet_0_to_9_energy_and_vehicle_details_to_xlsx_with_soc(model: ConcreteModel, filename: str):
     """
-    Erzeugt eine XLSX-Datei, die die Energie- und Fahrzeuganzahl einer bestimmten Flotte (fleet_id) über alle Zeitschritte und Zellen mit Ladestationen (charging_cells_key_set) ausgibt.
-    Zusätzlich wird der State of Charge (SOC) für in_wait_charge, wait und in_charge vehicles berechnet und ausgegeben.
-    Alle Werte stehen in einer Zeile.
+    Erzeugt eine XLSX-Datei, die die aggregierte Energie- und Fahrzeuganzahl für die Flotten 0 bis 9 über alle Zeitschritte und Zellen ausgibt.
+    Zusätzlich wird der State of Charge (SOC) für incoming, in, out und arrived vehicles berechnet und ausgegeben.
+    Alle Werte stehen in einer Zeile: n_incoming_vehicles, Q_incoming_vehicles, SOC_incoming_vehicles, n_in, Q_in, SOC_in, etc.
     Speichert die Datei im Verzeichnis "results".
 
     :param model: Das ConcreteModel des Ladeoptimierungsmodells.
-    :param fleet_id: Die ID der Flotte, für die die Daten ausgegeben werden sollen.
     :param filename: Der Name der XLSX-Datei, die erzeugt wird (ohne Pfad).
     """
-    # Sicherstellen, dass das Verzeichnis 'results' existiert
     results_dir = 'results'
     if not os.path.exists(results_dir):
         os.makedirs(results_dir)
 
-    # Erstelle den vollständigen Pfad zur Datei
     file_path = os.path.join(results_dir, filename)
-
-    # Erstelle das Excel-Workbook und aktiviere das Arbeitsblatt
     workbook = Workbook()
     sheet = workbook.active
-    sheet.title = f"Fleet_{fleet_id}_Charging_Details"
+    sheet.title = "Combined_Fleet_0_to_9_Details"
 
-    # Schreibe die Header
     headers = [
-        'Zeitschritt', 'Zelle', 'Flotten-id',
-        'n_in_wait_charge', 'Q_in_charge_wait', 'SOC_in_wait_charge',
-        'n_wait', 'Q_wait', 'SOC_wait',
-        'n_in_charge', 'Q_in_charge', 'SOC_in_charge',
-        'n_in_wait', 'Q_in_wait', 'SOC_in_wait'
-        'n_finished_charging', 'Q_finished_charging', 'SOC_in_wait'
+        'Zeitschritt', 'Zelle',
+        'n_incoming_vehicles', 'Q_incoming_vehicles', 'SOC_incoming_vehicles',
+        'n_in', 'Q_in', 'SOC_in',
+        'n_out', 'Q_out', 'SOC_out',
+        'n_arrived_vehicles', 'Q_arrived_vehicles', 'SOC_arrived_vehicles'
     ]
     sheet.append(headers)
 
-    # Iteriere über alle Zeitschritte und Zellen mit Ladestationen für die angegebene Flotte
-    for t, c, f in model.charging_cells_key_set:
-        if f == fleet_id:
-            # Erfasse die Werte von Q_in_charge_wait, Q_wait, Q_in_charge, Q_in_wait
-            Q_in_charge_wait = model.Q_in_charge_wait[t, c, fleet_id].value
-            Q_wait = model.Q_wait[t, c, fleet_id].value
-            Q_in_charge = model.Q_in_charge[t, c, fleet_id].value
-            Q_in_wait = model.Q_in_wait[t, c, fleet_id].value
-            Q_finished_charging = model.Q_finished_charging[t, c, fleet_id].value
+    for t in model.nb_timestep:
+        for c in model.nb_cell:
+            # Initialisiere aggregierte Variablen
+            total_n_incoming_vehicles = total_Q_incoming_vehicles = 0
+            total_n_in = total_Q_in = 0
+            total_n_out = total_Q_out = 0
+            total_n_arrived_vehicles = total_Q_arrived_vehicles = 0
 
-            # Erfasse die entsprechenden n-Werte
-            n_in_wait_charge = model.n_in_wait_charge[t, c, fleet_id].value
-            n_wait = model.n_wait[t, c, fleet_id].value
-            n_in_charge = model.n_in_charge[t, c, fleet_id].value
-            n_in_wait = model.n_in_wait[t, c, fleet_id].value
-            n_finished_charging = model.n_finished_charging[t, c, fleet_id].value
+            for fleet_id in range(0, 10):
+                if (t, c, fleet_id) in model.key_set:
+                    total_n_incoming_vehicles += model.n_incoming_vehicles[t, c, fleet_id].value
+                    total_Q_incoming_vehicles += model.Q_incoming_vehicles[t, c, fleet_id].value
 
-            # Berechne SOC-Werte, wenn n-Werte > 0 sind, um Division durch 0 zu vermeiden
-            SOC_in_wait_charge = Q_in_charge_wait / n_in_wait_charge if n_in_wait_charge > 0 else 0
-            SOC_wait = Q_wait / n_wait if n_wait > 0 else 0
-            SOC_in_charge = Q_in_charge / n_in_charge if n_in_charge > 0 else 0
-            SOC_in_wait = Q_in_wait / n_in_wait if n_in_wait > 0 else 0
-            SOC_finished_charging = Q_finished_charging / n_finished_charging if n_finished_charging > 0 else 0
+                    total_n_in += model.n_in[t, c, fleet_id].value
+                    total_Q_in += model.Q_in[t, c, fleet_id].value
 
-            # Schreibe alle Werte in eine Zeile
+                    total_n_out += model.n_out[t, c, fleet_id].value
+                    total_Q_out += model.Q_out[t, c, fleet_id].value
+
+                    total_n_arrived_vehicles += model.n_arrived_vehicles[t, c, fleet_id].value
+                    total_Q_arrived_vehicles += model.Q_arrived_vehicles[t, c, fleet_id].value
+
+            # Berechne SOC-Werte
+            SOC_incoming_vehicles = total_Q_incoming_vehicles / total_n_incoming_vehicles if total_n_incoming_vehicles > 0 else 0
+            SOC_in = total_Q_in / total_n_in if total_n_in > 0 else 0
+            SOC_out = total_Q_out / total_n_out if total_n_out > 0 else 0
+            SOC_arrived_vehicles = total_Q_arrived_vehicles / total_n_arrived_vehicles if total_n_arrived_vehicles > 0 else 0
+
+            # Schreibe aggregierte Werte in eine Zeile
             sheet.append([
-                t, c, fleet_id,
-                n_in_wait_charge, Q_in_charge_wait, SOC_in_wait_charge,
-                n_wait, Q_wait, SOC_wait,
-                n_in_charge, Q_in_charge, SOC_in_charge,
-                n_in_wait, Q_in_wait, SOC_in_wait,
-                n_finished_charging, Q_finished_charging, SOC_finished_charging
+                t, c,
+                total_n_incoming_vehicles, total_Q_incoming_vehicles, SOC_incoming_vehicles,
+                total_n_in, total_Q_in, SOC_in,
+                total_n_out, total_Q_out, SOC_out,
+                total_n_arrived_vehicles, total_Q_arrived_vehicles, SOC_arrived_vehicles
             ])
 
-    # Speichere das Workbook als XLSX-Datei
     workbook.save(file_path)
+    print(f"Die aggregierten Energie- und Fahrzeug-Daten für die Flotten 0 bis 9 wurden in {file_path} gespeichert.")
 
-    print(f"Die detaillierten Lade-Daten der Flotte {fleet_id} wurden in {file_path} gespeichert.")
+def write_combined_fleet_10_to_19_energy_and_vehicle_details_to_xlsx_with_soc(model: ConcreteModel, filename: str):
+    """
+    Erzeugt eine XLSX-Datei, die die aggregierte Energie- und Fahrzeuganzahl für die Flotten 10 bis 19 über alle Zeitschritte und Zellen ausgibt.
+    Zusätzlich wird der State of Charge (SOC) für incoming, in, out und arrived vehicles berechnet und ausgegeben.
+    Alle Werte stehen in einer Zeile: n_incoming_vehicles, Q_incoming_vehicles, SOC_incoming_vehicles, n_in, Q_in, SOC_in, etc.
+    Speichert die Datei im Verzeichnis "results".
+
+    :param model: Das ConcreteModel des Ladeoptimierungsmodells.
+    :param filename: Der Name der XLSX-Datei, die erzeugt wird (ohne Pfad).
+    """
+    results_dir = 'results'
+    if not os.path.exists(results_dir):
+        os.makedirs(results_dir)
+
+    file_path = os.path.join(results_dir, filename)
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.title = "Combined_Fleet_10_to_19_Details"
+
+    headers = [
+        'Zeitschritt', 'Zelle',
+        'n_incoming_vehicles', 'Q_incoming_vehicles', 'SOC_incoming_vehicles',
+        'n_in', 'Q_in', 'SOC_in',
+        'n_out', 'Q_out', 'SOC_out',
+        'n_arrived_vehicles', 'Q_arrived_vehicles', 'SOC_arrived_vehicles'
+    ]
+    sheet.append(headers)
+
+    for t in model.nb_timestep:
+        for c in model.nb_cell:
+            # Initialisiere aggregierte Variablen
+            total_n_incoming_vehicles = total_Q_incoming_vehicles = 0
+            total_n_in = total_Q_in = 0
+            total_n_out = total_Q_out = 0
+            total_n_arrived_vehicles = total_Q_arrived_vehicles = 0
+
+            for fleet_id in range(10, 20):
+                if (t, c, fleet_id) in model.key_set:
+                    total_n_incoming_vehicles += model.n_incoming_vehicles[t, c, fleet_id].value
+                    total_Q_incoming_vehicles += model.Q_incoming_vehicles[t, c, fleet_id].value
+
+                    total_n_in += model.n_in[t, c, fleet_id].value
+                    total_Q_in += model.Q_in[t, c, fleet_id].value
+
+                    total_n_out += model.n_out[t, c, fleet_id].value
+                    total_Q_out += model.Q_out[t, c, fleet_id].value
+
+                    total_n_arrived_vehicles += model.n_arrived_vehicles[t, c, fleet_id].value
+                    total_Q_arrived_vehicles += model.Q_arrived_vehicles[t, c, fleet_id].value
+
+            # Berechne SOC-Werte
+            SOC_incoming_vehicles = total_Q_incoming_vehicles / total_n_incoming_vehicles if total_n_incoming_vehicles > 0 else 0
+            SOC_in = total_Q_in / total_n_in if total_n_in > 0 else 0
+            SOC_out = total_Q_out / total_n_out if total_n_out > 0 else 0
+            SOC_arrived_vehicles = total_Q_arrived_vehicles / total_n_arrived_vehicles if total_n_arrived_vehicles > 0 else 0
+
+            # Schreibe aggregierte Werte in eine Zeile
+            sheet.append([
+                t, c,
+                total_n_incoming_vehicles, total_Q_incoming_vehicles, SOC_incoming_vehicles,
+                total_n_in, total_Q_in, SOC_in,
+                total_n_out, total_Q_out, SOC_out,
+                total_n_arrived_vehicles, total_Q_arrived_vehicles, SOC_arrived_vehicles
+            ])
+
+    workbook.save(file_path)
+    print(f"Die aggregierten Energie- und Fahrzeug-Daten für die Flotten 10 bis 19 wurden in {file_path} gespeichert.")

@@ -354,6 +354,7 @@ def charging_2(model: ConcreteModel, t, c, f):
         <= model.n_charge2[t, c, f] * model.fleet_charge_cap[f] * model.time_resolution * model.ladewirkungsgrad            #* (model.fleet_charge_cap[f]/ 350)
     )
 
+"""Min Charging"""
 def charging_3(model: ConcreteModel, t, c, f):
     return (
         model.E_charge3[t, c, f]
@@ -487,7 +488,7 @@ def setting_relation_n_Q_in_wait_charge_min_c(model: ConcreteModel, t, c, f):
 def setting_relation_n_Q_in_wait_charge_max_c(model: ConcreteModel, t, c, f):
     return (
         model.Q_in_charge_wait[t, c, f]
-        <= model.n_in_wait_charge[t, c, f] * model.fleet_batt_cap[f] * model.SOC_loading_controlled
+        <= model.n_in_wait_charge[t, c, f] * model.fleet_batt_cap[f] * model.SOC_loading_controlled #* model.SOC_max #
     )
 
 def setting_relation_n_Q_in_wait_charge_min_r(model: ConcreteModel, t, c, f):
@@ -523,7 +524,7 @@ def setting_relation_n_Q_in_wait_min_c(model: ConcreteModel, t, c, f):
 def setting_relation_n_Q_in_wait_max_c(model: ConcreteModel, t, c, f):
     return (
         model.Q_in_wait[t, c, f]
-        <= model.n_in_wait[t, c, f] * model.fleet_batt_cap[f] * model.SOC_loading_controlled
+        <= model.n_in_wait[t, c, f] * model.fleet_batt_cap[f] * model.SOC_loading_controlled # * model.SOC_max
     )
 
 def setting_relation_n_Q_in_wait_min_r(model: ConcreteModel, t, c, f):
@@ -559,7 +560,7 @@ def setting_relation_n_Q_wait_min_c(model: ConcreteModel, t, c, f):
 def setting_relation_n_Q_wait_max_c(model: ConcreteModel, t, c, f):
     return (
         model.Q_wait[t, c, f]
-        <= model.n_wait[t, c, f] * model.fleet_batt_cap[f] * model.SOC_loading_controlled
+        <= model.n_wait[t, c, f] * model.fleet_batt_cap[f] * model.SOC_loading_controlled #* model.SOC_max
     )
 
 def setting_relation_n_Q_wait_min_r(model: ConcreteModel, t, c, f):
@@ -595,7 +596,7 @@ def setting_relation_n_Q_in_charge_min_c(model: ConcreteModel, t, c, f):
 def setting_relation_n_Q_in_charge_max_c(model: ConcreteModel, t, c, f):
     return (
         model.Q_in_charge[t, c, f]
-        <= model.n_in_charge[t, c, f] * model.fleet_batt_cap[f] * model.SOC_loading_controlled
+        <= model.n_in_charge[t, c, f] * model.fleet_batt_cap[f] * model.SOC_loading_controlled #* model.SOC_max
     )
 
 def setting_relation_n_Q_in_charge_min_r(model: ConcreteModel, t, c, f):
@@ -631,7 +632,7 @@ def setting_relation_n_Q_wait_charge_next_min_c(model: ConcreteModel, t, c, f):
 def setting_relation_n_Q_wait_charge_next_max_c(model: ConcreteModel, t, c, f):
     return (
         model.Q_wait_charge_next[t, c, f]
-        <= model.n_wait_charge_next[t, c, f] * model.fleet_batt_cap[f] * model.SOC_loading_controlled
+        <= model.n_wait_charge_next[t, c, f] * model.fleet_batt_cap[f] * model.SOC_loading_controlled #* model.SOC_max
     )
 
 def setting_relation_n_Q_wait_charge_next_min_r(model: ConcreteModel, t, c, f):
@@ -957,8 +958,8 @@ def entering_charging_station_Q(model: ConcreteModel, t, c, f):
     )
 
 def n_wait_to_zero(model: ConcreteModel, t, c, f):
-    return model.n_wait[t, c, f] <= 10
+    return model.n_wait[t, c, f] <= 0
 
 def n_wait_charge_next_to_zero(model: ConcreteModel, t, c, f):
-    return model.n_wait_charge_next[t, c, f] <= 10
+    return model.n_wait_charge_next[t, c, f] <= 0
 

@@ -36,7 +36,206 @@ def read_fleets(fleet_df):
 
 
 """Add Decision Variables"""
-def add_decision_variables_and_create_key_sets(
+def add_decision_variables_and_create_key_sets_reals(
+    model: ConcreteModel,
+    time_resolution: float,
+    nb_fleets: int,
+    nb_cells: int,
+    nb_timesteps: int,
+    SOC_min: float,
+    SOC_max: float,
+    fleet_df: pd.DataFrame, #DataFrame
+    cell_df: pd.DataFrame,
+    t_min: float,
+    SOC_upper_threshold: float,
+    SOC_lower_threshold: float,
+    SOC_finished_charging_random: float,
+    SOC_loading_controlled: float,
+    t_min_random: float,
+    t_min_controlled: float,
+):
+    """
+
+    :param model:
+    :param time_resolution:
+    :param nb_fleets:
+    :param nb_cells:
+    :param nb_timesteps:
+    :param SOC_min:
+    :param SOC_max:
+    :return:
+    """
+    model.nb_fleets = nb_fleets
+    model.nb_cells = nb_cells
+    model.nb_timesteps = nb_timesteps
+    model.nb_fleet = range(0, nb_fleets)
+    model.nb_cell = range(0, nb_cells)
+    model.nb_timestep = range(0, nb_timesteps)
+    model.time_resolution = time_resolution
+    model.SOC_min = SOC_min
+    model.SOC_max = SOC_max
+    model.SOC_upper_threshold = SOC_upper_threshold
+    model.SOC_lower_threshold = SOC_lower_threshold
+    model.t_min = t_min
+    model.t_min_random = t_min_random
+    model.t_min_controlled = t_min_controlled
+    model.SOC_finished_charging_random = SOC_finished_charging_random
+    model.SOC_loading_controlled = SOC_loading_controlled
+    #print("Model.tim_min ist:",t_min)
+    model.fleet_df = fleet_df #DataFrame
+    #print("Model.fleet_df ist:", model.fleet_df)
+    model.fleet_routes = fleet_df["route"].to_list() #DataFrame
+    #print("Model.fleet_routes ist:",model.fleet_routes)
+    model.fleet_depart_times = fleet_df["start_timestep"].to_list() #DataFrame
+    #print("Model.fleet_depart_times ist:", model.fleet_depart_times)
+    model.cell_width = cell_df["length"].array
+    #print("Model.cell_width ist:", model.cell_width)
+    model.cell_charging_cap = cell_df["capacity"].array
+    #print("Model.cell_charging_cap ist:", model.cell_charging_cap)
+    model.random_fleet = fleet_df["random_fleet"].to_list()
+    #print("Model.random_fleet ist:", model.random_fleet)
+
+    """Erstellung der wichtigsten Key Sets"""
+    t0 = time.time()
+    model.key_set = Set(initialize=create_set_init)                                                                         #Alle t, c, f
+    model.charging_cells_key_set = set([key for key in model.key_set if model.cell_charging_cap[
+        key[1]] > 0])                                                                                                       #t, c (mit CS), f
+    model.no_charging_cells_key_set = [key for key in model.key_set if model.cell_charging_cap[
+        key[1]] == 0]                                                                                                       #t, c (ohe CS), f
+    model.random_fleet_key_set = set(key for key in model.key_set if model.random_fleet[key[2]] == 1)                       #t, c, f (random)
+    model.random_fleet_cs = set([key for key in model.random_fleet_key_set if model.cell_charging_cap[
+        key[1]] > 0])                                                                                                       #t, c (mit CS), f (random)
+    model.controlled_fleet_key_set = set(key for key in model.key_set if model.random_fleet[key[2]] == 0)                   #t, c, f (controlled)
+    model.controlled_fleet_cs = set([key for key in model.controlled_fleet_key_set if model.cell_charging_cap[
+        key[1]] > 0])                                                                                                       #t, c (mit CS), f (controlled)
+
+
+    print("Nb. of keys (key_set)             :", len(model.key_set), " dies entspricht", len(model.key_set) / 120,
+          "Einträgen")  # Anzahl an erstellten keys (siehe overleaf)
+    print("Nb. of keys (charging_cells)      :", len(model.charging_cells_key_set), " dies entspricht",
+          len(model.charging_cells_key_set) / 120, "Einträgen")
+    print("Nb. of keys (no_charging_cells)   :", len(model.no_charging_cells_key_set), " dies entspricht",
+          len(model.no_charging_cells_key_set) / 120, "Einträgen")
+    print("Nb. of keys (random_fleet)        :", len(model.random_fleet_key_set), " dies entspricht",
+          len(model.random_fleet_key_set) / 120, "Einträgen")
+    print("Nb. of keys (random_fleet_CS)     :", len(model.random_fleet_cs), " dies entspricht",
+          len(model.random_fleet_cs) / 120, "Einträgen")
+    print("Nb. of keys (controlled_fleet)    :", len(model.controlled_fleet_key_set), " dies entspricht",
+          len(model.controlled_fleet_key_set) / 120, "Einträgen")
+    print("Nb. of keys (controlled_fleet_CS) :", len(model.controlled_fleet_cs), " dies entspricht",
+          len(model.controlled_fleet_cs) / 120, "Einträgen")
+
+    """Erstellung restlichen Key Sets mit 3 Einträgen"""
+    model.routing_set = Set(initialize=create_set_routing)                                                                  #t, c (r-1), f
+
+    """Erstellung restlichen Key Sets mit 2 Einträgen"""
+    model.t_cs = set([(el[0], el[1]) for el in model.charging_cells_key_set])                                               #t, c (mit CS)
+    model.keys_c_f = set([(el[1], el[2]) for el in model.key_set])                                                          #c, f
+    model.cell_and_fleets_CS = set([(el[1], el[2]) for el in model.charging_cells_key_set])                                 #c (mit CS), f
+
+    # Definiere ein Key_Set für Zellen, die eine Ladestation haben
+    model.cs_cells = set([(el[1]) for el in model.charging_cells_key_set])
+    print("Overview of the cells with a charging station:")
+    print(model.cs_cells)
+
+    print("\nDie Erstellung aller Key Sets dauerte... ", time.time() - t0, "sec")
+
+    """Restliche Key Sets die gelöscht werden können"""
+    #model.key_routing_set = Set(initialize=create_set_routing)                                                             #kann gelöscht werden
+    #model.cell_and_fleets = set([(el[1], el[2]) for el in model.key_set])                                                  #Kann denke ich rausgenommen werden da nicht verwendet!
+
+
+    """Erzeugung der Entscheidungsvariablen"""
+    #mit Var werden Entscheidungsvariablen definiert in Klammern wird angegeben welchen Wertebereich (Domain) die Variable annehmen kann
+
+    model.ladewirkungsgrad = Param(initialize=0.71428)  # Beispiel: 0.8 = 80% Ladewirkungsgrad
+
+    """n Varialen mit NonNegativeReals"""
+    model.n_incoming_vehicles = Var(model.key_set, within=NonNegativeReals)
+    model.n_in = Var(model.key_set, within=NonNegativeReals)
+    model.n_pass = Var(model.key_set, within=NonNegativeReals)
+    model.n_exit = Var(model.key_set, within=NonNegativeReals)
+    model.n_out = Var(model.key_set, within=NonNegativeReals)
+    model.n_arrived_vehicles = Var(model.key_set, within=NonNegativeReals)
+    model.n_in_wait_charge = Var(model.charging_cells_key_set, within=NonNegativeReals)
+    model.n_in_wait = Var(model.charging_cells_key_set, within=NonNegativeReals)
+    model.n_wait = Var(model.charging_cells_key_set, within=NonNegativeReals)
+    model.n_wait_charge_next = Var(model.charging_cells_key_set, within=NonNegativeReals)
+    model.n_in_charge = Var(model.charging_cells_key_set, within=NonNegativeReals)
+    model.n_charge1 = Var(model.charging_cells_key_set, within=NonNegativeReals)
+    model.n_charge2 = Var(model.charging_cells_key_set, within=NonNegativeReals)
+    model.n_charge3 = Var(model.charging_cells_key_set, within=NonNegativeReals)
+    model.n_output_charged1 = Var(model.charging_cells_key_set, within=NonNegativeReals)
+    model.n_output_charged2 = Var(model.charging_cells_key_set, within=NonNegativeReals)
+    model.n_output_charged3 = Var(model.charging_cells_key_set, within=NonNegativeReals)
+    model.n_finished_charge1 = Var(model.charging_cells_key_set, within=NonNegativeReals)
+    model.n_finished_charge2 = Var(model.charging_cells_key_set, within=NonNegativeReals)
+    model.n_finished_charge3 = Var(model.charging_cells_key_set, within=NonNegativeReals)
+    model.n_finished_charging = Var(model.charging_cells_key_set, within=NonNegativeReals)
+    model.n_exit_charge = Var(model.charging_cells_key_set, within=NonNegativeReals)
+
+    """n Varialen mit NonNegativeIntegers"""
+    #model.n_incoming_vehicles = Var(model.key_set, within=NonNegativeIntegers)
+    #model.n_in = Var(model.key_set, within=NonNegativeIntegers)
+    #model.n_pass = Var(model.key_set, within=NonNegativeIntegers)
+    #model.n_exit = Var(model.key_set, within=NonNegativeIntegers)
+    #model.n_out = Var(model.key_set, within=NonNegativeIntegers)
+    #model.n_arrived_vehicles = Var(model.key_set, within=NonNegativeIntegers)
+    #model.n_in_wait_charge = Var(model.charging_cells_key_set, within=NonNegativeIntegers)
+    #model.n_in_wait = Var(model.charging_cells_key_set, within=NonNegativeIntegers)
+    #model.n_wait = Var(model.charging_cells_key_set, within=NonNegativeIntegers)
+    #model.n_wait_charge_next = Var(model.charging_cells_key_set, within=NonNegativeIntegers)
+    #model.n_in_charge = Var(model.charging_cells_key_set, within=NonNegativeIntegers)
+    #model.n_charge1 = Var(model.charging_cells_key_set, within=NonNegativeIntegers)
+    #model.n_charge2 = Var(model.charging_cells_key_set, within=NonNegativeIntegers)
+    #model.n_charge3 = Var(model.charging_cells_key_set, within=NonNegativeIntegers)
+    #model.n_output_charged1 = Var(model.charging_cells_key_set, within=NonNegativeIntegers)
+    #model.n_output_charged2 = Var(model.charging_cells_key_set, within=NonNegativeIntegers)
+    #model.n_output_charged3 = Var(model.charging_cells_key_set, within=NonNegativeIntegers)
+    #model.n_finished_charge1 = Var(model.charging_cells_key_set, within=NonNegativeIntegers)
+    #model.n_finished_charge2 = Var(model.charging_cells_key_set, within=NonNegativeIntegers)
+    #model.n_finished_charge3 = Var(model.charging_cells_key_set, within=NonNegativeIntegers)
+    #model.n_finished_charging = Var(model.charging_cells_key_set, within=NonNegativeIntegers)
+    #model.n_exit_charge = Var(model.charging_cells_key_set, within=NonNegativeIntegers)
+
+    """Q und E Variablen!"""
+
+    model.Q_incoming_vehicles = Var(model.key_set, within=NonNegativeReals)
+    model.Q_in = Var(model.key_set, within=NonNegativeReals)
+    model.Q_pass = Var(model.key_set, within=NonNegativeReals)
+    model.Q_exit = Var(model.key_set, within=NonNegativeReals)
+    model.Q_out = Var(model.key_set, within=NonNegativeReals)
+    model.Q_arrived_vehicles = Var(model.key_set, within=NonNegativeReals)
+    model.Q_in_charge_wait = Var(model.charging_cells_key_set, within=NonNegativeReals)
+    model.Q_in_wait = Var(model.charging_cells_key_set, within=NonNegativeReals)
+    model.Q_in_charge = Var(model.charging_cells_key_set, within=NonNegativeReals)
+    model.Q_wait = Var(model.charging_cells_key_set, within=NonNegativeReals)
+    model.Q_wait_charge_next = Var(model.charging_cells_key_set, within=NonNegativeReals)
+    model.Q_input_charge1 = Var(model.charging_cells_key_set, within=NonNegativeReals)
+    model.Q_output_charge1 = Var(model.charging_cells_key_set, within=NonNegativeReals)
+    model.Q_input_charge2 = Var(model.charging_cells_key_set, within=NonNegativeReals)
+    model.Q_output_charge2 = Var(model.charging_cells_key_set, within=NonNegativeReals)
+    model.Q_input_charge3 = Var(model.charging_cells_key_set, within=NonNegativeReals)
+    model.Q_output_charge3 = Var(model.charging_cells_key_set, within=NonNegativeReals)
+    model.Q_finished_charge1 = Var(model.charging_cells_key_set, within=NonNegativeReals)
+    model.Q_finished_charge2 = Var(model.charging_cells_key_set, within=NonNegativeReals)
+    model.Q_finished_charge3 = Var(model.charging_cells_key_set, within=NonNegativeReals)
+    model.Q_finished_charging = Var(model.charging_cells_key_set, within=NonNegativeReals)
+
+    model.E_consumed_pass = Var(model.key_set, within=NonNegativeReals)
+    model.E_consumed_charge_wait = Var(model.key_set, within=NonNegativeReals)
+    model.E_consumed_exit_charge = Var(model.key_set, within=NonNegativeReals)
+    model.E_charge1 = Var(model.charging_cells_key_set, within=NonNegativeReals)
+    model.E_charge2 = Var(model.charging_cells_key_set, within=NonNegativeReals)
+    model.E_charge3 = Var(model.charging_cells_key_set, within=NonNegativeReals)
+
+    """Neue Variablen / Julius"""
+    # Neue Variable für nicht genutzte Kapazität
+    model.unused_capacity = Var(model.t_cs, within=NonNegativeReals)
+    model.Unused_capacity_new = Var(model.cs_cells, within=NonNegativeReals)
+    #model.Unused_capacity_new = Var(model.nb_cell, within=NonNegativeReals)
+
+def add_decision_variables_and_create_key_sets_integers(
     model: ConcreteModel,
     time_resolution: float,
     nb_fleets: int,
@@ -234,7 +433,6 @@ def add_decision_variables_and_create_key_sets(
     model.unused_capacity = Var(model.t_cs, within=NonNegativeReals)
     model.Unused_capacity_new = Var(model.cs_cells, within=NonNegativeReals)
     #model.Unused_capacity_new = Var(model.nb_cell, within=NonNegativeReals)
-
 
 def create_set_init(model):
     """
@@ -903,6 +1101,11 @@ def constr_vehicle_states_with_uncontrolled_and_controlled_cars(model: ConcreteM
     model.charging_2 = Constraint(model.charging_cells_key_set, rule=charging_2)
     model.charging_3 = Constraint(model.charging_cells_key_set, rule=charging_3)
 
+    """Ohne Veränderung"""
+
+    #model.min_charging_1 = Constraint(model.charging_cells_key_set, rule=min_charging_1)
+    #model.min_charging_2 = Constraint(model.charging_cells_key_set, rule=min_charging_2)
+    #model.min_charging_3 = Constraint(model.charging_cells_key_set, rule=min_charging_3)
     """controlled fleet minimum charging"""
     model.min_charging_1_c = Constraint(model.controlled_fleet_cs, rule=min_charging_1_c)
     model.min_charging_2_c = Constraint(model.controlled_fleet_cs, rule=min_charging_2_c)
@@ -1002,17 +1205,16 @@ def constr_vehicle_states_with_uncontrolled_and_controlled_cars(model: ConcreteM
     model.setting_relation_n_Q_output_charge_3_max = Constraint(
         model.charging_cells_key_set, rule=setting_relation_n_Q_output_charge_3_max)
 
+    """Ohne Veränderung"""
+    #model.setting_relation_n_Q_finished_min = Constraint(model.charging_cells_key_set, rule=setting_relation_n_Q_finished_min)
+    #model.setting_relation_n_Q_finished_max = Constraint(model.charging_cells_key_set, rule=setting_relation_n_Q_finished_max)
     """controlled finished charging"""
-    model.setting_relation_n_Q_finished_min_c = Constraint(
-        model.controlled_fleet_cs, rule=setting_relation_n_Q_finished_min_c)
-    model.setting_relation_n_Q_finished_max_c = Constraint(
-        model.controlled_fleet_cs, rule=setting_relation_n_Q_finished_max_c)
+    model.setting_relation_n_Q_finished_min_c = Constraint(model.controlled_fleet_cs, rule=setting_relation_n_Q_finished_min_c)
+    model.setting_relation_n_Q_finished_max_c = Constraint(model.controlled_fleet_cs, rule=setting_relation_n_Q_finished_max_c)
 
     """random finished charging"""
-    model.setting_relation_n_Q_finished_min_r = Constraint(
-        model.random_fleet_cs, rule=setting_relation_n_Q_finished_min_r)
-    model.setting_relation_n_Q_finished_max_r = Constraint(
-        model.random_fleet_cs, rule=setting_relation_n_Q_finished_max_r)
+    model.setting_relation_n_Q_finished_min_r = Constraint(model.random_fleet_cs, rule=setting_relation_n_Q_finished_min_r)
+    model.setting_relation_n_Q_finished_max_r = Constraint(model.random_fleet_cs, rule=setting_relation_n_Q_finished_max_r)
 
     model.setting_relation_n_Q_finished_1_min = Constraint(
         model.charging_cells_key_set, rule=setting_relation_n_Q_finished_1_min)

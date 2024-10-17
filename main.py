@@ -62,14 +62,19 @@ nb_cells = len(cells) #Anzahl der Zellen
 time_frame = range(0, nb_time_steps + 1) #Zeithorizont Len=97
 
 """Flotteninformationen einlesen"""
-#for fleet_filename in ["___flotten_random_test2"]:
-#for fleet_filename in ["2024_24h_A2_fleets"]:     #30h
-#for fleet_filename in ["AT_A2_100(random 0.50, controlled 0.50)"]:
-for fleet_filename in ["AT_A2_100(random 0.00, controlled 1.00)"]:
-#for fleet_filename in ["2024_A2_fleets_100"]:
+#for fleet_filename in ["AT_A2_100(random 0.00, controlled 1.00)"]:                               # RND 0   CTR 100
+#for fleet_filename in ["AT_A2_100(random 0.10, controlled 0.90)"]:                               # RND 10  CTR 90
+#for fleet_filename in ["AT_A2_100(random 0.20, controlled 0.80)"]:                               # RND 20  CTR 80
+#for fleet_filename in ["AT_A2_100(random 0.34, controlled 0.66)"]:                               # RND 34  CTR 66
+#for fleet_filename in ["AT_A2_100(random 0.50, controlled 0.50)"]:                               # RND 50  CTR 50
+#for fleet_filename in ["AT_A2_100(random 0.66, controlled 0.34)"]:                               # RND 66  CTR 34
+#for fleet_filename in ["AT_A2_100(random 0.80, controlled 0.20)"]:                               # RND 80  CTR 20
+for fleet_filename in ["AT_A2_100(random 0.43, controlled 0.57)"]:                               # RND 90 CTR 10
+#for fleet_filename in ["AT_A2_100(random 1.00, controlled 0.00)"]:                               # RND 100 CTR 0
+
 
     fleet_df = read_fleets(pd.read_csv("data/" + fleet_filename + ".csv", delimiter=";"))
-    print('Die Flotten CSV Datei konnte erfolgreich eingelesen werden')
+    print(f"Die Flotten CSV Datei '{fleet_filename}.csv' konnte erfolgreich eingelesen werden")
     fleet_df["start_timestep"] = [int(el) for el in fleet_df.start_timestep]
     fleet_df["fleet_id"] = range(0, len(fleet_df))
     fleet_df["fleet_id"] = range(0, len(fleet_df))
@@ -101,27 +106,11 @@ for fleet_filename in ["AT_A2_100(random 0.00, controlled 1.00)"]:
     """Zeitmessung"""
     start = time.time() #Zeit in Sekunden die seit dem Epoch vergangen sind
 
-    """Entscheidungsvariablen erstellen"""
-    print("\nDefining decision variables ...")
+    """Entscheidungsvariablen erstellen"""     #Dieses Dataframe (fleet_df) ist relevant für die Funktion und alle aufgerufenen Unterfunktionen
+    print("\nDefining decision variables ...")           #Muss aber auch bei initialize_fleets geändert werden!
     t0 = time.time()
-    add_decision_variables_and_create_key_sets(
-        charging_model,
-        time_resolution,
-        nb_fleets,
-        nb_cells,
-        nb_time_steps,
-        SOC_min,
-        SOC_max,
-        fleet_df,   #Dieses Dataframe ist relevant für die Funktion und alle aufgerufenen Unterfunktionen
-        cells,      #Muss aber auch bei initialize_fleets geändert werden!
-        t_min,
-        SOC_upper_threshold,
-        SOC_lower_threshold,
-        SOC_finished_charging_random,
-        SOC_loading_controlled,
-        t_min_random,
-        t_min_controlled,
-    )
+    add_decision_variables_and_create_key_sets_reals(charging_model,time_resolution,nb_fleets,nb_cells,nb_time_steps,SOC_min,SOC_max,fleet_df,cells,t_min,SOC_upper_threshold,SOC_lower_threshold,SOC_finished_charging_random,SOC_loading_controlled,t_min_random,t_min_controlled)
+    #add_decision_variables_and_create_key_sets_integers(charging_model, time_resolution, nb_fleets, nb_cells,nb_time_steps, SOC_min, SOC_max, fleet_df, cells, t_min,SOC_upper_threshold, SOC_lower_threshold,SOC_finished_charging_random, SOC_loading_controlled, t_min_random,t_min_controlled)
     print("... took ", str(time.time() - t0), " sec")
 
     """Change of the input capacities"""
@@ -198,6 +187,7 @@ for fleet_filename in ["AT_A2_100(random 0.00, controlled 1.00)"]:
     #minimize_waiting_and_maximize_unused_capacities(charging_model)                                             #Zielfunktion
     maximize_unused_capacities(charging_model)
     #minimize_waiting(charging_model)
+    #multi_objective_function(charging_model)
 
 
     print("... took ", str(time.time() - t8), " sec")
@@ -208,34 +198,52 @@ for fleet_filename in ["AT_A2_100(random 0.00, controlled 1.00)"]:
 
 
 
-    # Erstellen des Gurobi Solvers
-    opt = SolverFactory("gurobi")
 
-    # Optional: Zeitlimit setzen (hier auskommentiert, kannst du anpassen)
-    # opt.options["TimeLimit"] = 300  # Zeitlimit in Sekunden
 
-    # Optional: Toleranz für die Optimallösung setzen (hier auskommentiert)
-    # opt.options["OptimalityTol"] = 1e-2
 
-    # Optional: Konvergenztoleranz für die Barrieremethode (hier auskommentiert)
-    # opt.options["BarConvTol"] = 1e-11
 
-    # Optional: Grenzwert, ab dem der Solver die Suche abbricht (hier auskommentiert)
-    # opt.options["Cutoff"] = 1e-3
 
-    # Optional: Deaktiviert die Verwendung von Crossover-Basislösungen
-    opt.options["Crossover"] = 0  # Deaktiviert das Crossover-Verfahren
-
-    # Methode festlegen (2 = Barrieremethode für kontinuierliche Probleme)
-    opt.options["Method"] = 2
-
-    # Hier setzen wir das relative Gap auf 1% (MIPGap 0.01 = 1%)
-    opt.options["MIPGap"] = 0.1  # Fügt eine Lücke von 1% hinzu
 
     # Optimierung starten
-    opt_success = opt.solve(
-        charging_model, report_timing=True, tee=True                                                                        #Lösen des Optimierungsmodells
-    )                                                                                                                       #report_time=True & tee=True aktivieren das Berichtswesen
+    #opt_success = opt.solve(
+    #    charging_model, report_timing=True, tee=True                                                                        #Lösen des Optimierungsmodells
+    #)                                                                                                                       #report_time=True & tee=True aktivieren das Berichtswesen
+
+    """Gurobi-Solver"""
+    opt = SolverFactory("gurobi")
+    # opt.options["TimeLimit"] = 14400                                                                                      #Zeitlimit in sec
+    # opt.options["OptimalityTol"] = 1e-2                                                                                   #Toleranz für Optimallösung
+    # opt.options["BarConvTol"] = 1e-11                                                                                     #Konvergenztoleranz für die Barrieremethode
+    # opt.options["Cutoff"] = 1e-3                                                                                          #Wert ab dem der Solver die Suche nach einer Lösung abbricht
+    # opt.options["CrossoverBasis"] = 0                                                                                     #Deaktiviert die Verwendung von Crossover-Basislösungen
+    opt.options["Crossover"] = 0                                                                                            #Deaktiviert das Crossover-Verfahren
+    opt.options["Method"] = 2                                                                                               #Legt die Methode fest: Siehe Dokument!
+    opt_success = opt.solve(charging_model, report_timing=True, tee=True)
+
+
+    #opt = SolverFactory("gurobi", solver_io="python")
+    # opt.options["TimeLimit"] = 14400
+    # opt.options["OptimalityTol"] = 1e-2
+    #opt.options["BarConvTol"] = 1e-11
+    # opt.options["Cutoff"] = 1e-3
+    # opt.options["CrossoverBasis"] = 0
+    #opt.options["Crossover"] = 0
+    #opt.options["Method"] = 3
+    #opt_success = opt.solve(
+        #charging_model, report_timing=True, tee=True
+    #)
+
+    #opt = SolverFactory("gurobi")
+    #opt.options["Method"] = 2  # Dual Simplex-Methode
+    #opt.options["MIPGap"] = 0.05  # 5% Toleranz
+    # opt.options["TimeLimit"] = 600  # Maximal 10 Minuten Laufzeit
+    #opt.options["Heuristics"] = 0.1  # 10% der Zeit für Heuristiken
+    #opt.options["Cuts"] = 1  # Moderate Anzahl von Cuts
+    #opt.options["Threads"] = 8  # Nutzt 8 Threads
+    #opt.options["Presolve"] = 2  # Aggressives Presolve
+    #opt_success = opt.solve(
+        #charging_model, report_timing=True, tee=True
+    #)
 
     print(
         colored(
@@ -272,7 +280,7 @@ for fleet_filename in ["AT_A2_100(random 0.00, controlled 1.00)"]:
     print_cell_info(cells)
 
     """Ausgabe der unused_capacity (c, t) und Erzeugung eines Plots"""
-    print("Values of unused_capacity, cell_charging_cap, and diff:")
+    #print("Values of unused_capacity, cell_charging_cap, and diff:")
     for t in charging_model.nb_timestep:
         for c in charging_model.nb_cell:
             # Prüfen, ob der Index (t, c) in model.key_set vorhanden ist
@@ -280,7 +288,7 @@ for fleet_filename in ["AT_A2_100(random 0.00, controlled 1.00)"]:
                 unused_capacity_value = charging_model.unused_capacity[t, c].value
                 cell_capacity = charging_model.cell_charging_cap[c]
                 diff = unused_capacity_value - cell_capacity
-                print(f"timestep: {t}, cell: {c}, unused_capacity: {unused_capacity_value}, cell_capacity: {cell_capacity}, diff: {diff}")
+                #print(f"timestep: {t}, cell: {c}, unused_capacity: {unused_capacity_value}, cell_capacity: {cell_capacity}, diff: {diff}")
 
 
     """Plots nur für gesamte Input Daten"""
@@ -298,14 +306,14 @@ for fleet_filename in ["AT_A2_100(random 0.00, controlled 1.00)"]:
 
     """Plots nur für A2"""
     """Aufruf der Plot-Funktion für die Darstellung der unused_capacity"""
-    unused_capacity_A2(charging_model, time_of_optimization)
+    #unused_capacity_A2(charging_model, time_of_optimization)
 
     """Detaillierte Ausgabe für einzelne Zellen"""
-    print("Debug: Unused capacity values for cell 13:")
+    #print("Debug: Unused capacity values for cell 13:")
     for t in charging_model.nb_timestep:
         if (t, 13) in charging_model.t_cs:
             unused_capacity_value = charging_model.unused_capacity[t, 13].value
-            print(f"Timestep: {t}, Unused capacity: {unused_capacity_value}")
+            #print(f"Timestep: {t}, Unused capacity: {unused_capacity_value}")
 
 
 
@@ -356,6 +364,10 @@ for fleet_filename in ["AT_A2_100(random 0.00, controlled 1.00)"]:
                                                             filename="fleet_9_charging_details.xlsx")
 
 
+    write_combined_fleet_0_to_9_energy_and_vehicle_details_to_xlsx_with_soc(model=charging_model,filename="combined_fleets_0_to_9_movement_details.xlsx")
+    write_combined_fleet_0_to_9_energy_and_vehicle_charging_details_to_xlsx(charging_model, filename="combined_fleets_0_to_9_charging_details.xlsx")
+
+
     """random fleets 10-19"""
     write_fleet_energy_and_vehicle_details_to_xlsx_with_soc(charging_model, fleet_id=10,
                                                             filename="fleet_10_energy_details_with_soc.xlsx")
@@ -398,6 +410,11 @@ for fleet_filename in ["AT_A2_100(random 0.00, controlled 1.00)"]:
                                                             filename="fleet_18_charging_details.xlsx")
     write_fleet_energy_and_vehicle_charging_details_to_xlsx(charging_model, fleet_id=19,
                                                             filename="fleet_19_charging_details.xlsx")
+
+    write_combined_fleet_10_to_19_energy_and_vehicle_charging_details_to_xlsx(charging_model, filename="combined_fleets_10_to_19_charging_details.xlsx")
+    write_combined_fleet_10_to_19_energy_and_vehicle_details_to_xlsx_with_soc(model=charging_model,filename="combined_fleets_10_to_19_movement_details.xlsx")
+
+
 
     write_output_file_charging_stations(charging_model, time_of_optimization, fleet_filename)               #n_in_wait_charge, Queue=wait+wait_charge_next, Summe(n_charge)
                                                                                                             #Summe(E_charge), n_in, n_incoming_vehciles, n_exit, n_arrived, n_pass
@@ -863,10 +880,13 @@ for fleet_filename in ["AT_A2_100(random 0.00, controlled 1.00)"]:
 
     print(
         "Total energy charged:",
-        sum(sum(sum(E_charge1))) + sum(sum(sum(E_charge2))) + sum(sum(sum(E_charge3))),
-    )
+        sum(sum(sum(E_charge1))) + sum(sum(sum(E_charge2))) + sum(sum(sum(E_charge3))),)
+
+    calculate_and_print_energy_split_by_fleet(charging_model)
+
     print("check", np.sum(Q_arrived_vehicles) - np.sum(Q_incoming_vehicles),
           sum(sum(sum(E_charge1))) + sum(sum(sum(E_charge2))) + sum(sum(sum(E_charge3))) - total_cons)
+    print("the check considers Q_arrived_vehicles - incoming_vehicles and the total charged energy - total energy consumed")
 
     print("")
     print("Total energy consumped by passing the CS, E_consumed_pass:", np.sum(E_consumed_pass))
@@ -875,10 +895,15 @@ for fleet_filename in ["AT_A2_100(random 0.00, controlled 1.00)"]:
     print("Total energy consumed by entering the CS, E_consumed_charge_wait:", np.sum(E_consumed_charge_wait))
     print("Total energy consumed by leaving the CS, E_consumed_exit_charge:", np.sum(E_consumed_exit_charge))
     print("Total amount of vehicle into the CS, n_in_wait_charge:", np.sum(n_in_wait_charge))
+    #calculate_and_print_vehicles_waiting_to_charge_by_fleet(charging_model)                                                kann raus
+    calculate_and_print_vehicles_waiting_to_charge_by_fleet_new(charging_model)
+
+
     print("")
     print("Overview of the waiting vehicles")
     print("Total amount of waiting vehicles, n_wait:", np.sum(n_wait))
     print("Total amount of vehicles charging next, n_wait_charge_next:", np.sum(n_wait_charge_next))
+    print("")
     print("Total amount ot vehicles finishing charging, n_finished_charging:", np.sum(n_finished_charging))
     print("")
 
@@ -886,7 +911,7 @@ for fleet_filename in ["AT_A2_100(random 0.00, controlled 1.00)"]:
 
 
 
-    print("unused ist:", np.sum(unused_capacity))
+    #print("unused ist:", np.sum(unused_capacity))
 
     # Initialisiere die Summe
     total_unused_capacity_new = 0
