@@ -1005,6 +1005,7 @@ def set_n_wait_and_n_wait_charge_next_to_zero(model: ConcreteModel):
     model.c_n_wait_zero = Constraint(model.charging_cells_key_set, rule=n_wait_to_zero)
     model.c_n_wait_charge_next_zero = Constraint(model.charging_cells_key_set, rule=n_wait_charge_next_to_zero)
 
+
 """Zustände definieren"""
 
 def constr_vehicle_states_with_uncontrolled_and_controlled_cars(model: ConcreteModel):

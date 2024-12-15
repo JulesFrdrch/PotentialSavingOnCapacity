@@ -962,4 +962,3 @@ def n_wait_to_zero(model: ConcreteModel, t, c, f):
 
 def n_wait_charge_next_to_zero(model: ConcreteModel, t, c, f):
     return model.n_wait_charge_next[t, c, f] <= 0
-

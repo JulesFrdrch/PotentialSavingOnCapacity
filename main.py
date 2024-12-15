@@ -50,7 +50,8 @@ SOC_finished_charging_random = 0.8
 
 """Zelleninformationen einlesen"""
 #cells = pd.read_csv("data/20220722-232828_cells_input.csv")        #30h
-#cells = pd.read_csv("data/2024_A2_cell_input.csv")                                                       #A2 0 bis 13
+#cells = pd.read_csv("data/cell_input_sensivity_10.csv")                                                       #X5
+
 cells = pd.read_csv("data/2024_A2_cell_input_empty_start_end.csv")                                       #A2 1 bis 14 und leere erste und letzte Zelle
 
 print(cells)
@@ -68,12 +69,13 @@ time_frame = range(0, nb_time_steps + 1) #Zeithorizont Len=97
 #for fleet_filename in ["AT_A2_100(random 0.34, controlled 0.66)"]:                               # RND 34  CTR 66
 #for fleet_filename in ["AT_A2_100(random 0.50, controlled 0.50)"]:                               # RND 50  CTR 50
 #for fleet_filename in ["AT_A2_100(random 0.66, controlled 0.34)"]:                               # RND 66  CTR 34
-#for fleet_filename in ["AT_A2_100(random 0.80, controlled 0.20)"]:                               # RND 80  CTR 20
-for fleet_filename in ["AT_A2_100(random 0.43, controlled 0.57)"]:                               # RND 90 CTR 10
-#for fleet_filename in ["AT_A2_100(random 1.00, controlled 0.00)"]:                               # RND 100 CTR 0
+#for fleet_filename in ["AT_A2_100(random 0.80, controlled 0.20)_s"]:                               # RND 80  CTR 20
+#for fleet_filename in ["Sensivity_20_d"]:                               # RND 90 CTR 10
+for fleet_filename in ["AT_A2_100(random 0.80, controlled 0.20)"]:                               # RND 100 CTR 0
 
 
-    fleet_df = read_fleets(pd.read_csv("data/" + fleet_filename + ".csv", delimiter=";"))
+    #fleet_df = read_fleets(pd.read_csv("data/" + fleet_filename + ".csv", delimiter=";"))
+    fleet_df = read_fleets(pd.read_csv("data/data_x1/" + fleet_filename + ".csv", delimiter=";"))
     print(f"Die Flotten CSV Datei '{fleet_filename}.csv' konnte erfolgreich eingelesen werden")
     fleet_df["start_timestep"] = [int(el) for el in fleet_df.start_timestep]
     fleet_df["fleet_id"] = range(0, len(fleet_df))
@@ -924,6 +926,8 @@ for fleet_filename in ["AT_A2_100(random 0.43, controlled 0.57)"]:              
 
     # Ausgabe der Summe in der Konsole
     print(f"Total: {total_unused_capacity_new}")
+
+    print("Amount of incoming vehicles:", np.sum(n_incoming_vehicles))
 
     # Endzeitpunkt
     end_time = time.time()
