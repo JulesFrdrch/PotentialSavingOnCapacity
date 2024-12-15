@@ -55,6 +55,7 @@ SOC_finished_charging_random = 0.8
 cells = pd.read_csv("data/2024_A2_cell_input_empty_start_end.csv")                                       #A2 1 bis 14 und leere erste und letzte Zelle
 
 print(cells)
+print("ich bin eine TEST Ausgabe")
 
 #cells = pd.read_csv("data/___cells_random_test2_allCS.csv")
 nb_cells = len(cells) #Anzahl der Zellen
